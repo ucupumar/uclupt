@@ -22,6 +22,7 @@ def remember_before_bake(obj):
     book['ori_samples'] = scene.cycles.samples
     book['ori_threads_mode'] = scene.render.threads_mode
     book['ori_margin'] = scene.render.bake.margin
+    book['ori_margin_type'] = scene.render.bake.margin_type
     book['ori_use_clear'] = scene.render.bake.use_clear
     book['ori_normal_space'] = scene.render.bake.normal_space
     book['ori_simplify'] = scene.render.use_simplify
@@ -80,6 +81,7 @@ def recover_bake_settings(book, recover_active_uv=False):
     scene.cycles.bake_type = book['ori_bake_type']
     scene.render.threads_mode = book['ori_threads_mode']
     scene.render.bake.margin = book['ori_margin']
+    scene.render.bake.margin_type = book['ori_margin_type']
     scene.render.bake.use_clear = book['ori_use_clear']
     scene.render.use_simplify = book['ori_simplify']
     scene.cycles.device = book['ori_device']
@@ -169,7 +171,7 @@ def recover_bake_settings(book, recover_active_uv=False):
      #        o.hide_select = True
      #    else: o.hide_select = False
 
-def prepare_bake_settings(book, obj, uv_map='', samples=1, margin=5, bake_device='CPU'): #, disable_problematic_modifiers=True):
+def prepare_bake_settings(book, obj, uv_map='', samples=1, margin=15, bake_device='CPU'): #, disable_problematic_modifiers=True):
 
     scene = bpy.context.scene
     #obj = bpy.context.object
