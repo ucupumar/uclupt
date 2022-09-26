@@ -175,7 +175,8 @@ def bake_vdm(obj, image, uv_name=''):
     # Bake preparations
     book = remember_before_bake(obj)
     prepare_bake_settings(book, temp0, uv_name)
-    scene.render.bake.margin_type = 'ADJACENT_FACES'
+    #scene.render.bake.margin_type = 'ADJACENT_FACES'
+    scene.render.bake.margin_type = 'EXTEND'
 
     # Bake Offset
     btarget = mat.node_tree.nodes.get('Bake Target')
@@ -192,8 +193,6 @@ def bake_vdm(obj, image, uv_name=''):
     bitangent = mat.node_tree.nodes.get('Bitangent')
     emission = mat.node_tree.nodes.get('Emission')
     world2tangent = mat.node_tree.nodes.get('World to Tangent')
-
-    scene.render.bake.margin_type = 'EXTEND'
 
     # Bake tangent
     mat.node_tree.links.new(tangent.outputs['Tangent'], emission.inputs[0])
