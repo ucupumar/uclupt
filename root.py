@@ -54,6 +54,13 @@ class YCreateYScluptNode(bpy.types.Operator):
             ofstart.name = OFFSET_START
             ofstart.label = 'Offset Start'
 
+            # Create offset capture attribute node
+            ofcap = tree.nodes.new('GeometryNodeCaptureAttribute')
+            ofcap.name = OFFSET_CAPTURE
+            ofcap.label = 'Offset Capture'
+            ofcap.data_type = 'FLOAT_VECTOR'
+            ofcap.domain = 'CORNER'
+
             # Create offset process node
             ofproc = tree.nodes.new('GeometryNodeSetPosition')
             ofproc.name = OFFSET_PROCESS

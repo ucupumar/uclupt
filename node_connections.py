@@ -47,6 +47,7 @@ def reconnect_ys_nodes(tree):
     start = nodes.get(TREE_START)
     end = nodes.get(TREE_END)
     ofstart = nodes.get(OFFSET_START)
+    ofcap = nodes.get(OFFSET_CAPTURE)
     ofproc = nodes.get(OFFSET_PROCESS)
 
     geo = start.outputs['Geometry']
@@ -57,6 +58,9 @@ def reconnect_ys_nodes(tree):
         if layer_node:
             offset = create_link(tree, offset, layer_node.inputs[0])[0]
             reconnect_layer_nodes(layer)
+
+    geo = create_link(tree, geo, ofcap.inputs['Geometry'])[0]
+    offset = create_link(tree, offset, ofcap.inputs['Value'])[1]
 
     create_link(tree, offset, ofproc.inputs['Offset'])
 

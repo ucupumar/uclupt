@@ -80,6 +80,9 @@ def rearrange_ys_nodes(tree):
 
     loc.y = 0
 
+    check_set_node_loc(tree, OFFSET_CAPTURE, loc)
+    loc.x += 200
+
     check_set_node_loc(tree, OFFSET_PROCESS, loc)
     loc.x += 200
 

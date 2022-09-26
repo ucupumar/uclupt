@@ -3,6 +3,7 @@ import bpy, os, sys
 TREE_START = 'Group Input'
 TREE_END = 'Group Output'
 OFFSET_START = 'Offset Start'
+OFFSET_CAPTURE = 'Offset Capture'
 OFFSET_PROCESS = 'Offset Process'
 
 OFFSET_ATTR = 'yS Offset'
