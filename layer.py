@@ -88,6 +88,7 @@ class YSRemoveLayer(bpy.types.Operator):
         ys = ys_tree.ys
 
         if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
+            self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
         layer = ys.layers[ys.active_layer_index]

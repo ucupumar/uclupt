@@ -1,4 +1,5 @@
 import bpy, os, sys
+from mathutils import *
 
 TREE_START = 'Group Input'
 TREE_END = 'Group Output'
@@ -39,6 +40,8 @@ def create_input(tree, name, socket_type, min_value=None, max_value=None, defaul
         if min_value != None: inp.min_value = min_value
         if max_value != None: inp.max_value = max_value
         if default_value != None: inp.default_value = default_value
+
+    return inp
 
 def create_output(tree, name, socket_type, default_value=None):
 
@@ -122,10 +125,7 @@ def get_active_ysculpt_tree():
 
     return get_ysculpt_tree(obj)
 
-def get_active_ysculpt_modifiers():
-    obj = bpy.context.object
-    if not obj: return None, None
-
+def get_ysculpt_modifiers(obj):
     subsurf = None
     geo = None
 
@@ -142,6 +142,12 @@ def get_active_ysculpt_modifiers():
                 break
 
     return geo, subsurf
+
+def get_active_ysculpt_modifiers():
+    obj = bpy.context.object
+    if not obj: return None, None
+
+    return get_ysculpt_modifiers(obj)
 
 def get_active_multires_modifier():
     obj = bpy.context.object
@@ -166,3 +172,51 @@ def get_object_parent_layer_collections(arr, col, obj):
         if col not in arr: arr.append(col)
 
     return arr
+
+def srgb_to_linear_per_element(e):
+    if e <= 0.03928:
+        return e/12.92
+    else: 
+        return pow((e + 0.055) / 1.055, 2.4)
+
+def linear_to_srgb_per_element(e):
+    if e > 0.0031308:
+        return 1.055 * (pow(e, (1.0 / 2.4))) - 0.055
+    else: 
+        return 12.92 * e
+
+def srgb_to_linear(inp):
+
+    if type(inp) == float:
+        return srgb_to_linear_per_element(inp)
+
+    elif type(inp) == Color:
+
+        c = inp.copy()
+
+        for i in range(3):
+            c[i] = srgb_to_linear_per_element(c[i])
+
+        return c
+
+def linear_to_srgb(inp):
+
+    if type(inp) == float:
+        return linear_to_srgb_per_element(inp)
+
+    elif type(inp) == Color:
+
+        c = inp.copy()
+
+        for i in range(3):
+            c[i] = linear_to_srgb_per_element(c[i])
+
+        return c
+
+def set_active_uv(obj, uv_name):
+    if obj.type != 'MESH': return
+
+    uv = obj.data.uv_layers.get(uv_name)
+    if uv:
+        obj.data.uv_layers.active = uv
+        uv.active_render = True

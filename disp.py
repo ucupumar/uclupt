@@ -1,4 +1,5 @@
 import bpy, numpy, time
+from mathutils import *
 from .lib import *
 from .bake_common import *
 from .common import *
@@ -50,10 +51,146 @@ def get_tangent_bitangent_images(obj, uv_name):
 
     return tanimage, bitimage
 
-def bake_vdm(obj, image, uv_name=''):
+def get_offset_attributes(base, sculpted):
+
+    if len(base.data.vertices) != len(sculpted.data.vertices):
+        return None, None
+
+    # Get coordinates for each vertices
+    base_arr = numpy.zeros(len(base.data.vertices)*3, dtype=numpy.float32)
+    base.data.vertices.foreach_get('co', base_arr)
+    
+    sculpted_arr = numpy.zeros(len(sculpted.data.vertices)*3, dtype=numpy.float32)
+    sculpted.data.vertices.foreach_get('co', sculpted_arr)
+    
+    # Subtract to get offset
+    offset = numpy.subtract(sculpted_arr, base_arr)
+    #print(offset.max())
+    max_value = numpy.abs(offset).max()  
+    offset.shape = (offset.shape[0]//3, 3)
+
+    
+    # Create new attribute to store the offset
+    att = base.data.attributes.get(OFFSET_ATTR)
+    if not att:
+        att = base.data.attributes.new(OFFSET_ATTR, 'FLOAT_VECTOR', 'POINT')
+    att.data.foreach_set('vector', offset.ravel())
+
+    return att, max_value
+
+def bake_tangent(obj, uv_name=''):
 
     context = bpy.context
     scene = context.scene
+    geo, subsurf = get_ysculpt_modifiers(obj)
+
+    if not geo or not subsurf:
+        return
+
+    # Copy object first
+    temp = obj.copy()
+    scene.collection.objects.link(temp)
+    temp.data = temp.data.copy()
+    context.view_layer.objects.active = temp
+    temp.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
+
+    # Set active uv
+    set_active_uv(temp, uv_name)
+
+    # Mesh with ngons will can't calculate tangents
+    try:
+        temp.data.calc_tangents()
+    except:
+        # Triangulate ngon faces on temp object
+        bpy.ops.object.select_all(action='DESELECT')
+        temp.select_set(True)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.reveal()
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.mesh.select_mode(type="FACE")
+        bpy.ops.mesh.select_face_by_sides(number=4, type='GREATER')
+        bpy.ops.mesh.quads_convert_to_tris()
+        bpy.ops.mesh.tris_convert_to_quads()
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        temp.data.calc_tangents()
+
+    # Bitangent sign attribute's
+    bs_att = temp.data.attributes.get(BSIGN_ATTR)
+    if not bs_att:
+        bs_att = temp.data.attributes.new(BSIGN_ATTR, 'FLOAT', 'CORNER')
+    arr = numpy.zeros(len(temp.data.loops), dtype=numpy.float32)
+    temp.data.loops.foreach_get('bitangent_sign', arr)
+    bs_att.data.foreach_set('value', arr.ravel())
+
+    # Disable multires modifiers if there's any
+    for mod in temp.modifiers:
+        if mod.type == 'MULTIRES':
+            mod.show_viewport = False
+            mod.show_render = False
+
+    # Get ys geo and subsurf modifiers of temp object
+    tgeo, tsubsurf = get_ysculpt_modifiers(temp)
+
+    # Disable ys modifiers
+    tgeo.show_viewport = False
+    tgeo.show_render = False
+
+    # Set subsurf to max levels
+    tsubsurf.show_viewport = True
+    tsubsurf.show_render = True
+    tsubsurf.levels = tsubsurf.render_levels
+    #bpy.ops.object.modifier_apply(modifier=tsubsurf.name)
+    
+    # Get tangent and bitangent image
+    tanimage, bitimage = get_tangent_bitangent_images(obj, uv_name)
+
+    # Bake preparations
+    book = remember_before_bake(temp)
+    prepare_bake_settings(book, temp, uv_name)
+
+    # Set bake tangent material
+    temp.data.materials.clear()
+    mat = get_tangent_bake_mat(uv_name, target_image=tanimage)
+    temp.data.materials.append(mat)
+
+    # Bake tangent
+    bpy.ops.object.bake()
+
+    # Remove temp mat
+    if mat.users <= 1: bpy.data.materials.remove(mat, do_unlink=True)
+
+    # Set bake bitangent material
+    temp.data.materials.clear()
+    mat = get_bitangent_bake_mat(uv_name, target_image=bitimage)
+    temp.data.materials.append(mat)
+
+    # Bake bitangent
+    bpy.ops.object.bake()
+
+    # Remove temp mat
+    if mat.users <= 1: bpy.data.materials.remove(mat, do_unlink=True)
+
+    # Pack tangent and bitangent images
+    tanimage.pack()
+    bitimage.pack()
+
+    # Revover bake settings
+    recover_bake_settings(book, True)
+
+    # Remove temp object 0 and non_ngon_obj
+    bpy.data.objects.remove(temp, do_unlink=True)
+
+    # Set back object to active
+    context.view_layer.objects.active = obj
+    obj.select_set(True)
+
+def bake_offset_from_multires(obj, image, uv_name=''):
+
+    context = bpy.context
+    scene = context.scene
+    #ys_tree = get_ysculpt_tree(obj)
+    #ys = ys_tree.ys
 
     context.view_layer.objects.active = obj
     if obj.mode != 'OBJECT':
@@ -64,46 +201,11 @@ def bake_vdm(obj, image, uv_name=''):
     if not obj.select_get():
         obj.select_set(True)
 
-    # Mesh with ngons will can't calculate tangents
-    non_ngon_obj = None
-    try:
-        obj.data.calc_tangents()
-    except:
-        non_ngon_obj = obj.copy()
-        non_ngon_obj.data = obj.data.copy()
-        non_ngon_obj.name = '___TEMP__'
-
-        scene.collection.objects.link(non_ngon_obj)
-        context.view_layer.objects.active = non_ngon_obj
-
-        # Triangulate ngon faces on temp object
-        bpy.ops.object.select_all(action='DESELECT')
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.reveal()
-        bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.mesh.select_mode(type="FACE")
-        bpy.ops.mesh.select_face_by_sides(number=4, type='GREATER')
-        bpy.ops.mesh.quads_convert_to_tris()
-        bpy.ops.mesh.tris_convert_to_quads()
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-        non_ngon_obj.data.calc_tangents()
-
-    # Source object for duplication
-    source_obj = non_ngon_obj if non_ngon_obj else obj
-
-    # Bitangent sign attribute's
-    bs_att = source_obj.data.attributes.get(BSIGN_ATTR)
-    if not bs_att:
-        bs_att = source_obj.data.attributes.new(BSIGN_ATTR, 'FLOAT', 'CORNER')
-    arr = numpy.zeros(len(source_obj.data.loops), dtype=numpy.float32)
-    source_obj.data.loops.foreach_get('bitangent_sign', arr)
-    bs_att.data.foreach_set('value', arr.ravel())
-
     # Temp object 0
-    temp0 = source_obj.copy()
+    temp0 = obj.copy()
     scene.collection.objects.link(temp0)
     temp0.data = temp0.data.copy()
+    temp0.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
     
     # Delete multires
     context.view_layer.objects.active = temp0
@@ -132,9 +234,10 @@ def bake_vdm(obj, image, uv_name=''):
         bpy.ops.object.modifier_remove(modifier=mod.name)
     
     # Temp object 1
-    temp1 = source_obj.copy()
+    temp1 = obj.copy()
     scene.collection.objects.link(temp1)
     temp1.data = temp1.data.copy()
+    temp1.location += Vector(((obj.dimensions[0]+0.1)*2, 0.0, 0.0))
     
     # Apply multires
     context.view_layer.objects.active = temp1
@@ -144,84 +247,33 @@ def bake_vdm(obj, image, uv_name=''):
             bpy.ops.object.modifier_apply(modifier=mod.name)
             break
 
-    # Get coordinates for each vertices
-    arr0 = numpy.zeros(len(temp0.data.vertices)*3, dtype=numpy.float32)
-    temp0.data.vertices.foreach_get('co', arr0)
-    
-    arr1 = numpy.zeros(len(temp1.data.vertices)*3, dtype=numpy.float32)
-    temp1.data.vertices.foreach_get('co', arr1)
-    
-    # Subtract to get offset
-    offset = numpy.subtract(arr1, arr0)
-    offset.shape = (offset.shape[0]//3, 3)
-    
-    # Create new attribute to store the offset
-    att = temp0.data.attributes.get(OFFSET_ATTR)
-    if not att:
-        att = temp0.data.attributes.new(OFFSET_ATTR, 'FLOAT_VECTOR', 'POINT')
-    att.data.foreach_set('vector', offset.ravel())
+    # Calculate offset from two temp objects
+    att, max_value = get_offset_attributes(temp0, temp1)
 
-    # Delete Temp object 1 since offset attribute already calculated
-    bpy.data.objects.remove(temp1, do_unlink=True)
+    # Get bitangent image
+    tanimage, bitimage = get_tangent_bitangent_images(obj, uv_name)
 
     # Set material to temp object 0
     temp0.data.materials.clear()
-    mat = get_offset_tangent_space_mat()
+    mat = get_offset_bake_mat(uv_name, target_image=image, bitangent_image=bitimage)
     temp0.data.materials.append(mat)
-
-    tanode = mat.node_tree.nodes.get('Tangent')
-    tanode.uv_map = uv_name
 
     # Bake preparations
     book = remember_before_bake(obj)
     prepare_bake_settings(book, temp0, uv_name)
-    #scene.render.bake.margin_type = 'ADJACENT_FACES'
-    scene.render.bake.margin_type = 'EXTEND'
 
-    # Bake Offset
-    btarget = mat.node_tree.nodes.get('Bake Target')
-    btarget.image = image
-    mat.node_tree.nodes.active = btarget
-
+    # Bake offest
     bpy.ops.object.bake()
 
-    # Bake Tangent
-    tanimage, bitimage = get_tangent_bitangent_images(obj, uv_name)
-
-    # Set connections
-    tangent = mat.node_tree.nodes.get('Tangent')
-    bitangent = mat.node_tree.nodes.get('Bitangent')
-    emission = mat.node_tree.nodes.get('Emission')
-    world2tangent = mat.node_tree.nodes.get('World to Tangent')
-
-    # Bake tangent
-    mat.node_tree.links.new(tangent.outputs['Tangent'], emission.inputs[0])
-    btarget.image = tanimage
-    bpy.ops.object.bake()
-
-    # Bake bitangent
-    mat.node_tree.links.new(bitangent.outputs['Bitangent'], emission.inputs[0])
-    btarget.image = bitimage
-    bpy.ops.object.bake()
-
-    # Pack tangent and bitangent images
-    tanimage.pack()
-    bitimage.pack()
-
-    # Recover connections
-    mat.node_tree.links.new(world2tangent.outputs['Vector'], emission.inputs[0])
-
+    # Recover bake settings
     recover_bake_settings(book, True)
 
-    # Remove temp object 0 and non_ngon_obj
+    # Remove temp objects
     bpy.data.objects.remove(temp0, do_unlink=True)
-    if non_ngon_obj:
-        bpy.data.objects.remove(non_ngon_obj, do_unlink=True)
+    bpy.data.objects.remove(temp1, do_unlink=True)
 
-    # Remove bitangent sign attribute
-    bs_att = obj.data.attributes.get(BSIGN_ATTR)
-    if bs_att:
-        obj.data.attributes.remove(bs_att)
+    # Remove material
+    if mat.users <= 1: bpy.data.materials.remove(mat, do_unlink=True)
 
     # Set back object to active
     context.view_layer.objects.active = obj
@@ -245,6 +297,11 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         ys = ys_tree.ys
 
         if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
+            self.report({'ERROR'}, "Cannot get active layer!")
+            return {'CANCELLED'}
+
+        if not any([m for m in obj.modifiers if m.type == 'MULTIRES']):
+            self.report({'ERROR'}, "Need multires modifier!")
             return {'CANCELLED'}
 
         layer = ys.layers[ys.active_layer_index]
@@ -252,14 +309,14 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         uv_map = layer_tree.nodes.get(layer.uv_map)
         uv_name = uv_map.inputs[0].default_value
 
-        uv = obj.data.uv_layers.get(uv_name)
-        uv.active_render = True
-        obj.data.uv_layers.active = uv
+        set_active_uv(obj, uv_name)
 
         source = layer_tree.nodes.get(layer.source)
         image = source.inputs[0].default_value
 
-        bake_vdm(obj, image, uv_name)
+        bake_tangent(obj, uv_name)
+        bake_offset_from_multires(obj, image, uv_name)
+        #return {'FINISHED'}
 
         # Pack image
         image.pack()
@@ -290,16 +347,59 @@ class YSSculptLayer(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return get_active_ysculpt_tree()
+        ys_tree = get_active_ysculpt_tree()
+        if not ys_tree: return False
+        return len(ys_tree.ys.layers) > 0
 
     def execute(self, context):
+        scene = context.scene
         obj = context.object
-        geo, subsurf = get_active_ysculpt_modifiers()
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
+        geo, subsurf = get_ysculpt_modifiers(obj)
         if not geo or not subsurf:
             self.report({'ERROR'}, "Need " + get_addon_title() + " geometry nodes modifier and subsurf modifier above it!")
             return {'CANCELLED'}
 
+        if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
+            self.report({'ERROR'}, "Cannot get active layer!")
+            return {'CANCELLED'}
+
+        # Get layer
+        layer = ys.layers[ys.active_layer_index]
+        layer_tree = get_layer_tree(layer)
+        source = layer_tree.nodes.get(layer.source)
+        image = source.inputs[0].default_value if source else None
+
+        if not image:
+            self.report({'ERROR'}, "Active layer has no image!")
+            return {'CANCELLED'}
+
+        uv_map = layer_tree.nodes.get(layer.uv_map)
+        uv_name = uv_map.inputs[0].default_value
+
+        # Disable active layer
+        ori_enables = [l.enable for l in ys.layers]
+
+        #return {'FINISHED'}
+
+        # Duplicate object
+        temp = obj.copy()
+        scene.collection.objects.link(temp)
+        temp.data = temp.data.copy()
+        temp.data.materials.clear()
+
+        temp.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
+
+        # Back to original object
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        temp.select_set(True)
+        context.view_layer.objects.active = obj
+
         # Disable modifiers
+        geo, subsurf = get_ysculpt_modifiers(obj)
         geo.show_viewport = False
         geo.show_render = False
         subsurf.show_viewport = False
@@ -308,9 +408,16 @@ class YSSculptLayer(bpy.types.Operator):
         # Add multires modifier
         bpy.ops.object.modifier_add(type='MULTIRES')
         multires = [m for m in obj.modifiers if m.type == 'MULTIRES'][0]
+        obj.modifiers.active = multires
 
         for i in range(subsurf.levels-multires.levels):
             bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
+
+        # Reshape multires
+        bpy.ops.object.multires_reshape(modifier=multires.name)
+
+        # Remove temp object
+        bpy.data.objects.remove(temp, do_unlink=True)
 
         bpy.ops.object.mode_set(mode='SCULPT')
         return {'FINISHED'}

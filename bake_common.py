@@ -180,6 +180,7 @@ def prepare_bake_settings(book, obj, uv_map='', samples=1, margin=15, bake_devic
     scene.render.engine = 'CYCLES'
     scene.render.threads_mode = 'AUTO'
     scene.render.bake.margin = margin
+    scene.render.bake.margin_type = 'EXTEND'
     scene.render.bake.use_clear = False
     scene.render.bake.use_selected_to_active = False
     scene.render.bake.max_ray_distance = 0.0
