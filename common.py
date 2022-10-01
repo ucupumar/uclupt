@@ -150,14 +150,17 @@ def get_active_ysculpt_modifiers():
 
     return get_ysculpt_modifiers(obj)
 
-def get_active_multires_modifier():
-    obj = bpy.context.object
-    if not obj: return None
-
+def get_multires_modifier(obj):
     multires = [m for m in obj.modifiers if m.type == 'MULTIRES']
     if multires: return multires[0]
 
     return None
+
+def get_active_multires_modifier():
+    obj = bpy.context.object
+    if not obj: return None
+
+    return get_multires_modifier(obj)
 
 def get_object_parent_layer_collections(arr, col, obj):
     for o in col.collection.objects:

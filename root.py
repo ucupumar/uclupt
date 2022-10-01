@@ -159,6 +159,7 @@ def update_layer_index(self, context):
 
 def update_levels(self, context):
     geo, subsurf = get_active_ysculpt_modifiers()
+    multires = get_active_multires_modifier()
 
     if self.levels > self.max_levels:
         self.levels = self.max_levels
@@ -166,6 +167,10 @@ def update_levels(self, context):
     if subsurf:
         if self.levels != subsurf.levels:
             subsurf.levels = self.levels
+
+    if multires:
+        multires.levels = self.levels
+        multires.sculpt_levels = self.levels
 
 class YSculpt(bpy.types.PropertyGroup):
     is_ysculpt_node : BoolProperty(default=False)
