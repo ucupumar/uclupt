@@ -7,6 +7,7 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
         layer = item
         tree = get_layer_tree(layer)
         master = layout.row(align=True)
+        multires = get_active_multires_modifier()
 
         row = master.row(align=True)
 
@@ -17,10 +18,11 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
         else:
             row.prop(layer, 'name', text='', emboss=False, icon='TEXTURE')
 
-        row = master.row()
-        if layer.enable: eye_icon = 'HIDE_OFF'
-        else: eye_icon = 'HIDE_ON'
-        row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
+        if not multires:
+            row = master.row()
+            if layer.enable: eye_icon = 'HIDE_OFF'
+            else: eye_icon = 'HIDE_ON'
+            row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
 
 class UCLUPT_PT_main_panel(bpy.types.Panel):
@@ -34,13 +36,13 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
         geo = get_active_ysculpt_tree()
         multires = get_active_multires_modifier()
 
-        #col = self.layout.column()
+        col = self.layout.column()
+
         #col.operator('mesh.u_generate_vdm', icon='MOD_MULTIRES', text='Generate VDM')
         #col.separator()
 
-        col = self.layout.column()
-        col.operator('mesh.ys_debug_lib', icon='QUESTION')
-        col.separator()
+        #col.operator('mesh.ys_debug_lib', icon='QUESTION')
+        #col.separator()
 
         if not geo:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
@@ -48,13 +50,18 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             ys = geo.ys
             row = col.row()
 
-            rcol = row.column()
-            rcol.template_list("NODE_UL_YSculpt_layers", "", ys,
-                    "layers", ys, "active_layer_index", rows=3, maxrows=3)  
+            if not multires:
+                rcol = row.column()
+                rcol.template_list("NODE_UL_YSculpt_layers", "", ys,
+                        "layers", ys, "active_layer_index", rows=3, maxrows=3)  
 
-            rcol = row.column(align=True)
-            rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
-            rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
+                rcol = row.column(align=True)
+                rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
+                rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
+            elif len(ys.layers) > 0:
+                layer = ys.layers[ys.active_layer_index]
+                row = col.row()
+                row.label(text=layer.name, icon='IMAGE_DATA')
 
             if len(ys.layers) > 0:
                 layer = ys.layers[ys.active_layer_index]
@@ -80,12 +87,13 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                     else:
                         row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
 
-                row = col.row()
-                row.label(text=layer.name, icon='IMAGE_DATA')
+                if not multires:
+                    row = col.row()
+                    row.label(text=layer.name, icon='IMAGE_DATA')
 
-                row = col.row()
-                row.label(text='Blend:')
-                row.prop(blend.inputs[0], 'default_value', text='')
+                    row = col.row()
+                    row.label(text='Blend:')
+                    row.prop(blend.inputs[0], 'default_value', text='')
                 
                 #row = col.row()
                 #image = source.inputs[0].default_value
