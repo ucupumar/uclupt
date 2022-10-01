@@ -51,7 +51,7 @@ def get_tangent_bitangent_images(obj, uv_name):
 
     return tanimage, bitimage
 
-def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh):
+def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh, intensity=1.0):
 
     if len(base.data.vertices) != len(sclupted_mesh.data.vertices):
         return None, None
@@ -72,6 +72,8 @@ def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh):
     
     # Subtract to get offset
     offset = numpy.subtract(sculpted_arr, layer_disabled_arr)
+    if intensity != 1.0 or intensity != 0.0:
+        offset = numpy.divide(offset, intensity)
     #print(offset.max())
     max_value = numpy.abs(offset).max()  
     offset.shape = (offset.shape[0]//3, 3)
@@ -197,13 +199,15 @@ def bake_multires_to_layer(obj, layer):
     scene = context.scene
 
     layer_tree = get_layer_tree(layer)
-    uv_map = layer_tree.nodes.get(layer.uv_map)
-    uv_name = uv_map.inputs[0].default_value
 
+    uv_name = get_layer_uv_name(layer)
     set_active_uv(obj, uv_name)
 
     source = layer_tree.nodes.get(layer.source)
     image = source.inputs[0].default_value
+
+    blend = layer_tree.nodes.get(layer.blend)
+    intensity = blend.inputs[0].default_value
 
     context.view_layer.objects.active = obj
     if obj.mode != 'OBJECT':
@@ -269,7 +273,7 @@ def bake_multires_to_layer(obj, layer):
             break
 
     # Calculate offset from two temp objects
-    att, max_value = get_offset_attributes(temp0, temp1, temp2)
+    att, max_value = get_offset_attributes(temp0, temp1, temp2, intensity)
 
     #return
 
@@ -330,11 +334,16 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
+        layer = ys.layers[ys.active_layer_index]
+
+        if not layer.enable:
+            self.report({'ERROR'}, "Active layer need to be enabled!")
+            return {'CANCELLED'}
+
         if not any([m for m in obj.modifiers if m.type == 'MULTIRES']):
             self.report({'ERROR'}, "Need multires modifier!")
             return {'CANCELLED'}
 
-        layer = ys.layers[ys.active_layer_index]
         uv_name = get_layer_uv_name(layer)
 
         bake_tangent(obj, uv_name)
