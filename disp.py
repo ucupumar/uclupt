@@ -386,10 +386,6 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
-        # Make sure to select active object
-        if not obj.select_get():
-            obj.select_set(True)
-
         # Get layer
         layer = ys.layers[ys.active_layer_index]
         layer_tree = get_layer_tree(layer)
@@ -408,13 +404,12 @@ class YSSculptLayer(bpy.types.Operator):
         temp.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
 
         # Back to original object
-        if len(context.selected_objects) > 2:
-            if obj.mode != 'OBJECT':
-                bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.select_all(action='DESELECT')
-            obj.select_set(True)
-            temp.select_set(True)
-            #context.view_layer.objects.active = obj
+        if obj.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+        temp.select_set(True)
+        #context.view_layer.objects.active = obj
 
         # Disable modifiers
         geo, subsurf = get_ysculpt_modifiers(obj)
