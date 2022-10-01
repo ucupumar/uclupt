@@ -33,8 +33,10 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
     def draw(self, context):
         obj = context.object
-        geo = get_active_ysculpt_tree()
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys if ys_tree else None
         multires = get_active_multires_modifier()
+        geo, subsurf = get_ysculpt_modifiers(obj)
 
         col = self.layout.column()
 
@@ -44,11 +46,34 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
         #col.operator('mesh.ys_debug_lib', icon='QUESTION')
         #col.separator()
 
-        if not geo:
+        if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
             return
 
-        ys = geo.ys
+        # Subdivion settings
+        if subsurf and ys:
+            col.label(text='Subdivision', icon='MOD_SUBSURF')
+            #ccol = col.column(align=True)
+            split = col.split(factor=0.85)
+            #split.prop(subsurf, 'levels', text='Levels')
+            #split.label(text='/ ' + str(subsurf.render_levels))
+            split.prop(ys, 'levels', text='Levels')
+            split.label(text='/ ' + str(ys.max_levels))
+
+            crow = col.row(align=True)
+            crow.operator('mesh.y_subdivide_mesh', text='Subdivide')
+            crow.operator('mesh.y_delete_higher_subdivision', text='Delete Higher')
+
+            #ccol.prop(subsurf, 'levels', text='Levels (Max : ' + str(subsurf.render_levels) + ')')
+            #ccol.prop(subsurf, 'levels', text='Levels')
+            #ccol.prop(subsurf, 'render_levels', text='Max Levels')
+            #ccol.label(text='Max Levels: ' + str(subsurf.render_levels))
+            col.separator()
+
+        ys = ys_tree.ys
+
+        col.label(text='Layers', icon='RENDERLAYERS')
+
         row = col.row()
 
         layer = None

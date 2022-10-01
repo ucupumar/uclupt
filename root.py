@@ -76,6 +76,74 @@ class YCreateYScluptNode(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YSSubdivide(bpy.types.Operator):
+    bl_idname = "mesh.y_subdivide_mesh"
+    bl_label = "Subdivide Mesh"
+    bl_description = "Subdivide Mesh"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def execute(self, context):
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+        multires = get_active_multires_modifier()
+        geo, subsurf = get_active_ysculpt_modifiers()
+
+        if ys.max_levels >= 6:
+            self.report({'ERROR'}, "Maximum subdvision level is already reached!")
+            return {'CANCELLED'}
+
+        ys.max_levels += 1
+        ys.levels = ys.max_levels
+
+        if subsurf:
+            subsurf.levels = ys.max_levels
+            subsurf.render_levels = ys.max_levels
+
+        if multires:
+            multires.levels = ys.max_levels
+            multires.sculpt_levels = ys.max_levels
+            multires.render_levels = ys.max_levels
+
+        return {'FINISHED'}
+
+class YSDeleteHigherSubdivision(bpy.types.Operator):
+    bl_idname = "mesh.y_delete_higher_subdivision"
+    bl_label = "Delete Higher Subdivision"
+    bl_description = "Delete Higher Subdivision"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def execute(self, context):
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+        multires = get_active_multires_modifier()
+        geo, subsurf = get_active_ysculpt_modifiers()
+
+        if ys.max_levels == 1:
+            self.report({'ERROR'}, "Minimum subdvision level is already reached!")
+            return {'CANCELLED'}
+
+        ys.max_levels -= 1
+        ys.levels = ys.max_levels
+
+        if subsurf:
+            subsurf.levels = ys.max_levels
+            subsurf.render_levels = ys.max_levels
+
+        if multires:
+            multires.levels = ys.max_levels
+            multires.sculpt_levels = ys.max_levels
+            multires.render_levels = ys.max_levels
+
+        return {'FINISHED'}
+
 def update_layer_index(self, context):
     ys = self
     try: layer = ys.layers[ys.active_layer_index]
@@ -89,6 +157,16 @@ def update_layer_index(self, context):
         # Hack for Blender 2.8 which keep pinning image automatically
         #space.use_image_pin = False
 
+def update_levels(self, context):
+    geo, subsurf = get_active_ysculpt_modifiers()
+
+    if self.levels > self.max_levels:
+        self.levels = self.max_levels
+
+    if subsurf:
+        if self.levels != subsurf.levels:
+            subsurf.levels = self.levels
+
 class YSculpt(bpy.types.PropertyGroup):
     is_ysculpt_node : BoolProperty(default=False)
     is_ysculpt_layer_node : BoolProperty(default=False)
@@ -98,6 +176,10 @@ class YSculpt(bpy.types.PropertyGroup):
     layers : CollectionProperty(type=layer.YSLayer)
     active_layer_index : IntProperty(default=0, update=update_layer_index)
 
+    # Subdiv
+    levels : IntProperty(default=5, min=0, max=6, update=update_levels)
+    max_levels : IntProperty(default=5, min=1, max=6)
+
     # Nodes
     uv_map : StringProperty(default='')
     tangent : StringProperty(default='')
@@ -105,10 +187,14 @@ class YSculpt(bpy.types.PropertyGroup):
 
 def register():
     bpy.utils.register_class(YCreateYScluptNode)
+    bpy.utils.register_class(YSSubdivide)
+    bpy.utils.register_class(YSDeleteHigherSubdivision)
     bpy.utils.register_class(YSculpt)
 
     bpy.types.GeometryNodeTree.ys = PointerProperty(type=YSculpt)
 
 def unregister():
     bpy.utils.unregister_class(YCreateYScluptNode)
+    bpy.utils.unregister_class(YSSubdivide)
+    bpy.utils.unregister_class(YSDeleteHigherSubdivision)
     bpy.utils.unregister_class(YSculpt)
