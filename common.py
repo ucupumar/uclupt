@@ -7,6 +7,7 @@ OFFSET_START = 'Offset Start'
 OFFSET_CAPTURE = 'Offset Capture'
 OFFSET_PROCESS = 'Offset Process'
 
+BASE_ATTR = 'yS Base'
 OFFSET_ATTR = 'yS Offset'
 BSIGN_ATTR = 'yS Bitangent Sign'
 
@@ -220,3 +221,8 @@ def set_active_uv(obj, uv_name):
     if uv:
         obj.data.uv_layers.active = uv
         uv.active_render = True
+
+def get_layer_uv_name(layer):
+    layer_tree = get_layer_tree(layer)
+    uv_map = layer_tree.nodes.get(layer.uv_map)
+    return uv_map.inputs[0].default_value

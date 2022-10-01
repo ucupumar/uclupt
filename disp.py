@@ -51,24 +51,30 @@ def get_tangent_bitangent_images(obj, uv_name):
 
     return tanimage, bitimage
 
-def get_offset_attributes(base, sculpted):
+def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh):
 
-    if len(base.data.vertices) != len(sculpted.data.vertices):
+    if len(base.data.vertices) != len(sclupted_mesh.data.vertices):
         return None, None
 
     # Get coordinates for each vertices
     base_arr = numpy.zeros(len(base.data.vertices)*3, dtype=numpy.float32)
     base.data.vertices.foreach_get('co', base_arr)
+
+    layer_disabled_arr = numpy.zeros(len(layer_disabled_mesh.data.vertices)*3, dtype=numpy.float32)
+    layer_disabled_mesh.data.vertices.foreach_get('co', layer_disabled_arr)
     
-    sculpted_arr = numpy.zeros(len(sculpted.data.vertices)*3, dtype=numpy.float32)
-    sculpted.data.vertices.foreach_get('co', sculpted_arr)
+    sculpted_arr = numpy.zeros(len(sclupted_mesh.data.vertices)*3, dtype=numpy.float32)
+    sclupted_mesh.data.vertices.foreach_get('co', sculpted_arr)
+
+    #if original_vcos:
+    sculpted_arr = numpy.subtract(sculpted_arr, base_arr)
+    layer_disabled_arr = numpy.subtract(layer_disabled_arr, base_arr)
     
     # Subtract to get offset
-    offset = numpy.subtract(sculpted_arr, base_arr)
+    offset = numpy.subtract(sculpted_arr, layer_disabled_arr)
     #print(offset.max())
     max_value = numpy.abs(offset).max()  
     offset.shape = (offset.shape[0]//3, 3)
-
     
     # Create new attribute to store the offset
     att = base.data.attributes.get(OFFSET_ATTR)
@@ -185,12 +191,19 @@ def bake_tangent(obj, uv_name=''):
     context.view_layer.objects.active = obj
     obj.select_set(True)
 
-def bake_offset_from_multires(obj, image, uv_name=''):
+def bake_multires_to_layer(obj, layer): 
 
     context = bpy.context
     scene = context.scene
-    #ys_tree = get_ysculpt_tree(obj)
-    #ys = ys_tree.ys
+
+    layer_tree = get_layer_tree(layer)
+    uv_map = layer_tree.nodes.get(layer.uv_map)
+    uv_name = uv_map.inputs[0].default_value
+
+    set_active_uv(obj, uv_name)
+
+    source = layer_tree.nodes.get(layer.source)
+    image = source.inputs[0].default_value
 
     context.view_layer.objects.active = obj
     if obj.mode != 'OBJECT':
@@ -205,7 +218,7 @@ def bake_offset_from_multires(obj, image, uv_name=''):
     temp0 = obj.copy()
     scene.collection.objects.link(temp0)
     temp0.data = temp0.data.copy()
-    temp0.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
+    temp0.location = obj.location + Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
     
     # Delete multires
     context.view_layer.objects.active = temp0
@@ -215,40 +228,50 @@ def bake_offset_from_multires(obj, image, uv_name=''):
             max_level = mod.total_levels
             bpy.ops.object.modifier_remove(modifier=mod.name)
             break
-        
-    # Add subsurf then apply
-    subsurf = [m for m in temp0.modifiers if m.type == 'SUBSURF']
-    if subsurf: subsurf = subsurf[0]
-    else:
-        bpy.ops.object.modifier_add(type='SUBSURF')
-        subsurf = temp0.modifiers[-1]
 
-    subsurf.show_viewport = True
-    subsurf.levels = max_level
-    subsurf.render_levels = max_level
-    bpy.ops.object.modifier_apply(modifier=subsurf.name)
-    
-    # Remove ys modifier
+    # Apply subsurf
+    tgeo, tsubsurf = get_ysculpt_modifiers(temp0)
+    tsubsurf.show_viewport = True
+    tsubsurf.levels = max_level
+    tsubsurf.render_levels = max_level
+    bpy.ops.object.modifier_apply(modifier=tsubsurf.name)
+
+    # Temp object 1
+    temp1 = temp0.copy()
+    scene.collection.objects.link(temp1)
+    temp1.data = temp1.data.copy()
+    temp1.location = obj.location + Vector(((obj.dimensions[0]+0.1)*2, 0.0, 0.0))
+
+    # Disable active layer and apply geonodes
+    context.view_layer.objects.active = temp1
+    tgeo, tsubsurf = get_ysculpt_modifiers(temp1)
+    layer.enable = False
+    tgeo.show_viewport = True
+    bpy.ops.object.modifier_apply(modifier=tgeo.name)
+
+    # Remove geo modifier
     ys_mods = [m for m in temp0.modifiers if m.type == 'NODES' and m.node_group and m.node_group.ys.is_ysculpt_node]
     for mod in reversed(ys_mods):
         bpy.ops.object.modifier_remove(modifier=mod.name)
     
-    # Temp object 1
-    temp1 = obj.copy()
-    scene.collection.objects.link(temp1)
-    temp1.data = temp1.data.copy()
-    temp1.location += Vector(((obj.dimensions[0]+0.1)*2, 0.0, 0.0))
+    # Temp object 2
+    temp2 = obj.copy()
+    scene.collection.objects.link(temp2)
+    temp2.data = temp2.data.copy()
+    temp2.location = obj.location + Vector(((obj.dimensions[0]+0.1)*3, 0.0, 0.0))
     
     # Apply multires
-    context.view_layer.objects.active = temp1
-    for mod in temp1.modifiers:
+    context.view_layer.objects.active = temp2
+    for mod in temp2.modifiers:
         if mod.type == 'MULTIRES':
             mod.levels = max_level
             bpy.ops.object.modifier_apply(modifier=mod.name)
             break
 
     # Calculate offset from two temp objects
-    att, max_value = get_offset_attributes(temp0, temp1)
+    att, max_value = get_offset_attributes(temp0, temp1, temp2)
+
+    #return
 
     # Get bitangent image
     tanimage, bitimage = get_tangent_bitangent_images(obj, uv_name)
@@ -265,15 +288,22 @@ def bake_offset_from_multires(obj, image, uv_name=''):
     # Bake offest
     bpy.ops.object.bake()
 
+    # Pack image
+    image.pack()
+
     # Recover bake settings
     recover_bake_settings(book, True)
 
     # Remove temp objects
     bpy.data.objects.remove(temp0, do_unlink=True)
     bpy.data.objects.remove(temp1, do_unlink=True)
+    bpy.data.objects.remove(temp2, do_unlink=True)
 
     # Remove material
     if mat.users <= 1: bpy.data.materials.remove(mat, do_unlink=True)
+
+    # Bring back layer on the ys
+    layer.enable = True
 
     # Set back object to active
     context.view_layer.objects.active = obj
@@ -305,21 +335,11 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
             return {'CANCELLED'}
 
         layer = ys.layers[ys.active_layer_index]
-        layer_tree = get_layer_tree(layer)
-        uv_map = layer_tree.nodes.get(layer.uv_map)
-        uv_name = uv_map.inputs[0].default_value
-
-        set_active_uv(obj, uv_name)
-
-        source = layer_tree.nodes.get(layer.source)
-        image = source.inputs[0].default_value
+        uv_name = get_layer_uv_name(layer)
 
         bake_tangent(obj, uv_name)
-        bake_offset_from_multires(obj, image, uv_name)
+        bake_multires_to_layer(obj, layer)
         #return {'FINISHED'}
-
-        # Pack image
-        image.pack()
 
         # Remove multires
         for mod in reversed(obj.modifiers):
@@ -366,6 +386,10 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
+        # Make sure to select active object
+        if not obj.select_get():
+            obj.select_set(True)
+
         # Get layer
         layer = ys.layers[ys.active_layer_index]
         layer_tree = get_layer_tree(layer)
@@ -376,27 +400,21 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Active layer has no image!")
             return {'CANCELLED'}
 
-        uv_map = layer_tree.nodes.get(layer.uv_map)
-        uv_name = uv_map.inputs[0].default_value
-
-        # Disable active layer
-        ori_enables = [l.enable for l in ys.layers]
-
-        #return {'FINISHED'}
-
         # Duplicate object
         temp = obj.copy()
         scene.collection.objects.link(temp)
         temp.data = temp.data.copy()
         temp.data.materials.clear()
-
         temp.location += Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
 
         # Back to original object
-        bpy.ops.object.select_all(action='DESELECT')
-        obj.select_set(True)
-        temp.select_set(True)
-        context.view_layer.objects.active = obj
+        if len(context.selected_objects) > 2:
+            if obj.mode != 'OBJECT':
+                bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.select_all(action='DESELECT')
+            obj.select_set(True)
+            temp.select_set(True)
+            #context.view_layer.objects.active = obj
 
         # Disable modifiers
         geo, subsurf = get_ysculpt_modifiers(obj)

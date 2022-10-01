@@ -65,14 +65,20 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 col = self.layout.column()
 
                 row = col.row()
-                if obj.mode != 'SCULPT' and multires:
-                    row.alert = True
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
-                    row.alert = False
-                elif obj.mode != 'SCULPT':
-                    row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
+                if obj.mode == 'SCULPT':
+                    if multires:
+                        row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    else:
+                        row.alert = True
+                        row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
+                        row.alert = False
                 else:
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    if multires:
+                        row.alert = True
+                        row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                        row.alert = False
+                    else:
+                        row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
 
                 row = col.row()
                 row.label(text=layer.name, icon='IMAGE_DATA')
