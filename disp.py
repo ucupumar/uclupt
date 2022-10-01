@@ -334,16 +334,12 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
-        layer = ys.layers[ys.active_layer_index]
-
-        if not layer.enable:
-            self.report({'ERROR'}, "Active layer need to be enabled!")
-            return {'CANCELLED'}
 
         if not any([m for m in obj.modifiers if m.type == 'MULTIRES']):
             self.report({'ERROR'}, "Need multires modifier!")
             return {'CANCELLED'}
 
+        layer = ys.layers[ys.active_layer_index]
         uv_name = get_layer_uv_name(layer)
 
         bake_tangent(obj, uv_name)
@@ -391,13 +387,25 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Need " + get_addon_title() + " geometry nodes modifier and subsurf modifier above it!")
             return {'CANCELLED'}
 
+        # Get layer
+        layer = ys.layers[ys.active_layer_index]
+        layer_tree = get_layer_tree(layer)
+
+        if not layer.enable:
+            self.report({'ERROR'}, "Active layer need to be enabled!")
+            return {'CANCELLED'}
+
+        blend = layer_tree.nodes.get(layer.blend)
+        intensity = blend.inputs[0].default_value
+
+        if intensity == 0.0:
+            self.report({'ERROR'}, "Layer intensity should be more than 0.0!")
+            return {'CANCELLED'}
+
         if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
-        # Get layer
-        layer = ys.layers[ys.active_layer_index]
-        layer_tree = get_layer_tree(layer)
         source = layer_tree.nodes.get(layer.source)
         image = source.inputs[0].default_value if source else None
 
