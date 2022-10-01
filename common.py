@@ -226,3 +226,24 @@ def get_layer_uv_name(layer):
     layer_tree = get_layer_tree(layer)
     uv_map = layer_tree.nodes.get(layer.uv_map)
     return uv_map.inputs[0].default_value
+
+def get_layer_image(layer):
+    layer_tree = get_layer_tree(layer)
+    source = layer_tree.nodes.get(layer.source)
+    if not source: return None
+    return source.inputs[0].default_value
+
+def get_first_unpinned_image_editor_space(context, return_index=False):
+    space = None
+    index = -1
+    for i, area in enumerate(context.screen.areas):
+        if area.type == 'IMAGE_EDITOR':
+            if not area.spaces[0].use_image_pin:
+                space = area.spaces[0]
+                index = i
+                break
+
+    if return_index:
+        return space, index
+
+    return space

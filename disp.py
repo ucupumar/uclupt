@@ -203,8 +203,7 @@ def bake_multires_to_layer(obj, layer):
     uv_name = get_layer_uv_name(layer)
     set_active_uv(obj, uv_name)
 
-    source = layer_tree.nodes.get(layer.source)
-    image = source.inputs[0].default_value
+    image = get_layer_image(layer)
 
     blend = layer_tree.nodes.get(layer.blend)
     intensity = blend.inputs[0].default_value
@@ -406,8 +405,7 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
 
-        source = layer_tree.nodes.get(layer.source)
-        image = source.inputs[0].default_value if source else None
+        image = get_layer_image(layer)
 
         if not image:
             self.report({'ERROR'}, "Active layer has no image!")

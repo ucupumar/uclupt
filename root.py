@@ -77,7 +77,17 @@ class YCreateYScluptNode(bpy.types.Operator):
         return {'FINISHED'}
 
 def update_layer_index(self, context):
-    pass
+    ys = self
+    try: layer = ys.layers[ys.active_layer_index]
+    except: return
+
+    image = get_layer_image(layer)
+
+    space = get_first_unpinned_image_editor_space(context)
+    if space: 
+        space.image = image
+        # Hack for Blender 2.8 which keep pinning image automatically
+        #space.use_image_pin = False
 
 class YSculpt(bpy.types.PropertyGroup):
     is_ysculpt_node : BoolProperty(default=False)
