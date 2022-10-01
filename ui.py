@@ -46,60 +46,65 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         if not geo:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
-        else:
-            ys = geo.ys
+            return
+
+        ys = geo.ys
+        row = col.row()
+
+        layer = None
+        image = None
+        if len(ys.layers) > 0:
+            layer = ys.layers[ys.active_layer_index]
+            layer_tree = get_layer_tree(layer)
+            source = layer_tree.nodes.get(layer.source)
+            if source: image = source.inputs[0].default_value
+            blend = layer_tree.nodes.get(layer.blend)
+
+        if not multires:
+            rcol = row.column()
+            rcol.template_list("NODE_UL_YSculpt_layers", "", ys,
+                    "layers", ys, "active_layer_index", rows=3, maxrows=3)  
+
+            rcol = row.column(align=True)
+            rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
+            rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
+        elif layer:
             row = col.row()
+            row.label(text=image.name, icon='IMAGE_DATA')
+
+        if layer:
+
+            col = self.layout.column()
+
+            row = col.row()
+            if obj.mode == 'SCULPT':
+                if multires:
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                else:
+                    row.alert = True
+                    row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
+                    row.alert = False
+            else:
+                if multires:
+                    row.alert = True
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    row.alert = False
+                else:
+                    row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
 
             if not multires:
-                rcol = row.column()
-                rcol.template_list("NODE_UL_YSculpt_layers", "", ys,
-                        "layers", ys, "active_layer_index", rows=3, maxrows=3)  
-
-                rcol = row.column(align=True)
-                rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
-                rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
-            elif len(ys.layers) > 0:
-                layer = ys.layers[ys.active_layer_index]
                 row = col.row()
-                row.label(text=layer.name, icon='IMAGE_DATA')
-
-            if len(ys.layers) > 0:
-                layer = ys.layers[ys.active_layer_index]
-                layer_tree = get_layer_tree(layer)
-                blend = layer_tree.nodes.get(layer.blend)
-                #source = layer_tree.nodes.get(layer.source)
-
-                col = self.layout.column()
+                row.label(text=image.name, icon='IMAGE_DATA')
 
                 row = col.row()
-                if obj.mode == 'SCULPT':
-                    if multires:
-                        row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
-                    else:
-                        row.alert = True
-                        row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
-                        row.alert = False
-                else:
-                    if multires:
-                        row.alert = True
-                        row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
-                        row.alert = False
-                    else:
-                        row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
-
-                if not multires:
-                    row = col.row()
-                    row.label(text=layer.name, icon='IMAGE_DATA')
-
-                    row = col.row()
-                    row.label(text='Blend:')
-                    row.prop(blend.inputs[0], 'default_value', text='')
-                
-                #row = col.row()
-                #image = source.inputs[0].default_value
-                #
-                #if image: 
-                #    row.label(text='Source: ' + image.name)
+                row.label(text='Blend:')
+                row.prop(blend.inputs[0], 'default_value', text='')
+            
+            #row = col.row()
+            #image = source.inputs[0].default_value
+            #
+            #if image: 
+            #    row.label(text='Source: ' + image.name)
 
 
 def register():
