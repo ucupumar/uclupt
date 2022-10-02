@@ -547,7 +547,7 @@ class YSSculptLayer(bpy.types.Operator):
 
         # Set armature to the top
         arm = get_armature_modifier(obj)
-        bpy.ops.object.modifier_move_to_index(modifier=arm.name, index=0)
+        if arm: bpy.ops.object.modifier_move_to_index(modifier=arm.name, index=0)
 
         bpy.ops.object.mode_set(mode='SCULPT')
         return {'FINISHED'}

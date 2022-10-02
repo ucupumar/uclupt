@@ -268,6 +268,11 @@ def get_armature_modifier(obj, return_index=False):
                 return mod, i
             return mod
 
+    if return_index:
+        return None, None
+
+    return None
+
 def remember_armature_index(obj):
     ys_tree = get_ysculpt_tree(obj)
     if not ys_tree: return
