@@ -87,6 +87,7 @@ class YSSubdivide(bpy.types.Operator):
         return get_active_ysculpt_tree()
 
     def execute(self, context):
+        obj = context.object
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys
         multires = get_active_multires_modifier()
@@ -104,6 +105,8 @@ class YSSubdivide(bpy.types.Operator):
             subsurf.render_levels = ys.max_levels
 
         if multires:
+            if multires.total_levels < ys.max_levels:
+                bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
             multires.levels = ys.max_levels
             multires.sculpt_levels = ys.max_levels
             multires.render_levels = ys.max_levels
@@ -141,6 +144,8 @@ class YSDeleteHigherSubdivision(bpy.types.Operator):
             multires.levels = ys.max_levels
             multires.sculpt_levels = ys.max_levels
             multires.render_levels = ys.max_levels
+
+            bpy.ops.object.multires_higher_levels_delete(modifier=multires.name)
 
         return {'FINISHED'}
 

@@ -40,9 +40,6 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         col = self.layout.column()
 
-        #col.operator('mesh.u_generate_vdm', icon='MOD_MULTIRES', text='Generate VDM')
-        #col.separator()
-
         #col.operator('mesh.ys_debug_lib', icon='QUESTION')
         #col.separator()
 

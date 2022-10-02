@@ -341,6 +341,10 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         layer = ys.layers[ys.active_layer_index]
         uv_name = get_layer_uv_name(layer)
 
+        # Set to max levels
+        ori_levels = ys.levels
+        ys.levels = ys.max_levels
+
         bake_tangent(obj, uv_name)
         bake_multires_to_layer(obj, layer)
         #return {'FINISHED'}
@@ -358,6 +362,9 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         if subsurf:
             subsurf.show_viewport = True
             subsurf.show_render = True
+
+        # Recover original levels
+        ys.levels = ori_levels
 
         print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
@@ -411,6 +418,12 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Active layer has no image!")
             return {'CANCELLED'}
 
+        # Get modifiers
+        geo, subsurf = get_ysculpt_modifiers(obj)
+
+        # Set subsurf to highest level
+        subsurf.levels = ys.max_levels
+
         # Duplicate object
         temp = obj.copy()
         scene.collection.objects.link(temp)
@@ -427,18 +440,20 @@ class YSSculptLayer(bpy.types.Operator):
         #context.view_layer.objects.active = obj
 
         # Disable modifiers
-        geo, subsurf = get_ysculpt_modifiers(obj)
         geo.show_viewport = False
         geo.show_render = False
         subsurf.show_viewport = False
         subsurf.show_render = False
 
         # Add multires modifier
-        bpy.ops.object.modifier_add(type='MULTIRES')
-        multires = [m for m in obj.modifiers if m.type == 'MULTIRES'][0]
+        multires = get_multires_modifier(obj)
+        if not multires:
+            bpy.ops.object.modifier_add(type='MULTIRES')
+            multires = [m for m in obj.modifiers if m.type == 'MULTIRES'][0]
         obj.modifiers.active = multires
 
-        for i in range(subsurf.levels-multires.levels):
+        # Set to max levels
+        for i in range(ys.max_levels-multires.levels):
             bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
 
         # Reshape multires
@@ -447,138 +462,17 @@ class YSSculptLayer(bpy.types.Operator):
         # Remove temp object
         bpy.data.objects.remove(temp, do_unlink=True)
 
+        # Use current levels
+        multires.levels = ys.levels
+        multires.sculpt_levels = ys.levels
+
         bpy.ops.object.mode_set(mode='SCULPT')
         return {'FINISHED'}
-
-class UGenerateVDM(bpy.types.Operator):
-    bl_idname = "mesh.u_generate_vdm"
-    bl_label = "Generate Vector Displacement Map"
-    bl_description = "Generate Vector Displacement Map from Multires"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    @classmethod
-    def poll(cls, context):
-        return context.object
-
-    def execute(self, context):
-
-        obj = context.object
-        scene = context.scene
-        
-        obj.select_set(True)
-
-        # Mesh with ngons will can't calculate tangents
-        non_ngon_obj = None
-        try:
-            obj.data.calc_tangents()
-        except:
-            non_ngon_obj = obj.copy()
-            non_ngon_obj.data = obj.data.copy()
-            non_ngon_obj.name = '___TEMP__'
-
-            scene.collection.objects.link(non_ngon_obj)
-            context.view_layer.objects.active = non_ngon_obj
-
-            # Triangulate ngon faces on temp object
-            bpy.ops.object.select_all(action='DESELECT')
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.reveal()
-            bpy.ops.mesh.select_all(action='DESELECT')
-            bpy.ops.mesh.select_mode(type="FACE")
-            bpy.ops.mesh.select_face_by_sides(number=4, type='GREATER')
-            bpy.ops.mesh.quads_convert_to_tris()
-            bpy.ops.mesh.tris_convert_to_quads()
-            bpy.ops.object.mode_set(mode='OBJECT')
-
-            non_ngon_obj.data.calc_tangents()
-
-        # Source object for duplication
-        source_obj = non_ngon_obj if non_ngon_obj else obj
-
-        # Tangent attributes
-        #tan_att = source_obj.data.attributes.new('Tangent', 'FLOAT_VECTOR', 'CORNER')
-        #bit_att = source_obj.data.attributes.new('Bitangent', 'FLOAT_VECTOR', 'CORNER')
-
-        ## Store the tangents to attributes
-        #arr = numpy.zeros(len(source_obj.data.loops)*3, dtype=numpy.float32)
-        #source_obj.data.loops.foreach_get('tangent', arr)
-        #arr.shape = (arr.shape[0]//3, 3)
-        #tan_att.data.foreach_set('vector', arr.ravel())
-
-        #arr = numpy.zeros(len(source_obj.data.loops)*3, dtype=numpy.float32)
-        #source_obj.data.loops.foreach_get('bitangent', arr)
-        #arr.shape = (arr.shape[0]//3, 3)
-        #bit_att.data.foreach_set('vector', arr.ravel())
-
-        bs_att = source_obj.data.attributes.new('Bitangent Sign', 'FLOAT', 'CORNER')
-
-        arr = numpy.zeros(len(source_obj.data.loops), dtype=numpy.float32)
-        source_obj.data.loops.foreach_get('bitangent_sign', arr)
-        bs_att.data.foreach_set('value', arr.ravel())
-
-        # Temp object 0
-        temp0 = source_obj.copy()
-        scene.collection.objects.link(temp0)
-        temp0.data = temp0.data.copy()
-        
-        # Delete multires
-        context.view_layer.objects.active = temp0
-        max_level = 0
-        for mod in temp0.modifiers:
-            if mod.type == 'MULTIRES':
-                max_level = mod.total_levels
-                bpy.ops.object.modifier_remove(modifier=mod.name)
-                break
-            
-        # Add subsurf then apply
-        bpy.ops.object.modifier_add(type='SUBSURF')
-        for mod in temp0.modifiers:
-            if mod.type == 'SUBSURF':
-                mod.levels = max_level
-                mod.render_levels = max_level
-                bpy.ops.object.modifier_apply(modifier=mod.name)
-                break
-        
-        # Temp object 1
-        temp1 = source_obj.copy()
-        scene.collection.objects.link(temp1)
-        temp1.data = temp1.data.copy()
-        
-        # Apply multires
-        context.view_layer.objects.active = temp1
-        for mod in temp1.modifiers:
-            if mod.type == 'MULTIRES':
-                mod.levels = max_level
-                bpy.ops.object.modifier_apply(modifier=mod.name)
-                break
-        
-        # Get coordinates for each vertices
-        arr0 = numpy.zeros(len(temp0.data.vertices)*3, dtype=numpy.float32)
-        temp0.data.vertices.foreach_get('co', arr0)
-        
-        arr1 = numpy.zeros(len(temp1.data.vertices)*3, dtype=numpy.float32)
-        temp1.data.vertices.foreach_get('co', arr1)
-        
-        #print(temp0, arr0)
-        
-        # Subtract to get offset
-        offset = numpy.subtract(arr1, arr0)
-        offset.shape = (offset.shape[0]//3, 3)
-        
-        #print(offset)
-        
-        # Create new attribute to store the offset
-        att = temp0.data.attributes.new('Offset', 'FLOAT_VECTOR', 'POINT')
-        att.data.foreach_set('vector', offset.ravel())
-        
-        return {'FINISHED'} 
 
 def register():
     bpy.utils.register_class(YSApplySculptToVDMLayer)
     bpy.utils.register_class(YSSculptLayer)
-    bpy.utils.register_class(UGenerateVDM)
 
 def unregister():
     bpy.utils.unregister_class(YSApplySculptToVDMLayer)
     bpy.utils.unregister_class(YSSculptLayer)
-    bpy.utils.unregister_class(UGenerateVDM)
