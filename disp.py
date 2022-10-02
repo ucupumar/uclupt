@@ -340,6 +340,18 @@ class YSApplySculptToLayer(bpy.types.Operator):
         layer = ys.layers[ys.active_layer_index]
         uv_name = get_layer_uv_name(layer)
 
+        # Disable other modifiers
+        geo, subsurf = get_ysculpt_modifiers(obj)
+        multires = get_multires_modifier(obj)
+        ori_show_viewports = {}
+        ori_show_renders = {}
+        for m in obj.modifiers:
+            if m != subsurf and m != geo and m != multires:
+                ori_show_viewports[m.name] = m.show_viewport
+                ori_show_renders[m.name] = m.show_render
+                m.show_viewport = False
+                m.show_render = False
+
         # Set to max levels
         ori_levels = ys.levels
         ys.levels = ys.max_levels
@@ -364,6 +376,14 @@ class YSApplySculptToLayer(bpy.types.Operator):
 
         # Recover original levels
         ys.levels = ori_levels
+
+        # Enable some modifiers again
+        for mod_name, ori_show_viewport in ori_show_viewports.items():
+            m = obj.modifiers.get(mod_name)
+            if m: m.show_viewport = ori_show_viewport
+        for mod_name, ori_show_render in ori_show_renders.items():
+            m = obj.modifiers.get(mod_name)
+            if m: m.show_render = ori_show_render
 
         print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
