@@ -385,6 +385,9 @@ class YSApplySculptToLayer(bpy.types.Operator):
             m = obj.modifiers.get(mod_name)
             if m: m.show_render = ori_show_render
 
+        # Restore armature to original index
+        restore_armature_order(obj)
+
         print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
         return {'FINISHED'}
@@ -419,6 +422,9 @@ class YSCancelSculpt(bpy.types.Operator):
             subsurf.show_render = True
 
         bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Restore armature to original index
+        restore_armature_order(obj)
 
         return {'FINISHED'}
 
@@ -469,6 +475,9 @@ class YSSculptLayer(bpy.types.Operator):
         if not image:
             self.report({'ERROR'}, "Active layer has no image!")
             return {'CANCELLED'}
+
+        # Remember armature modifer
+        remember_armature_index(obj)
 
         # Get modifiers
         geo, subsurf = get_ysculpt_modifiers(obj)
@@ -535,6 +544,10 @@ class YSSculptLayer(bpy.types.Operator):
         for mod_name, ori_show_render in ori_show_renders.items():
             m = obj.modifiers.get(mod_name)
             if m: m.show_render = ori_show_render
+
+        # Set armature to the top
+        arm = get_armature_modifier(obj)
+        bpy.ops.object.modifier_move_to_index(modifier=arm.name, index=0)
 
         bpy.ops.object.mode_set(mode='SCULPT')
         return {'FINISHED'}

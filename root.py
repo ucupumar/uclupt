@@ -13,7 +13,7 @@ class YCreateYScluptNode(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.object
+        return context.object and context.object.type == 'MESH'
 
     def execute(self, context):
         obj = context.object
@@ -197,8 +197,14 @@ class YSculpt(bpy.types.PropertyGroup):
     active_layer_index : IntProperty(default=0, update=update_layer_index)
 
     # Subdiv
-    levels : IntProperty(default=5, min=0, max=6, update=update_levels)
+    levels : IntProperty(
+            name = 'Levels',
+            description = 'Subdvidision levels',
+            default=5, min=0, max=6, update=update_levels)
     max_levels : IntProperty(default=5, min=1, max=6)
+
+    # For saving modifier orders
+    ori_armature_index : IntProperty(default=0)
 
     # Nodes
     uv_map : StringProperty(default='')

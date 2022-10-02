@@ -261,3 +261,35 @@ def get_first_unpinned_image_editor_space(context, return_index=False):
 
     return space
 
+def get_armature_modifier(obj, return_index=False):
+    for i, mod in enumerate(obj.modifiers):
+        if mod.type == 'ARMATURE' and mod.object:
+            if return_index:
+                return mod, i
+            return mod
+
+def remember_armature_index(obj):
+    ys_tree = get_ysculpt_tree(obj)
+    if not ys_tree: return
+    ys = ys_tree.ys
+    
+    mod, idx = get_armature_modifier(obj, return_index=True)
+    if mod:
+        ys.ori_armature_index = idx
+
+def restore_armature_order(obj):
+    ys_tree = get_ysculpt_tree(obj)
+    if not ys_tree: return
+    ys = ys_tree.ys
+
+    mod, idx = get_armature_modifier(obj, return_index=True)
+
+    if not mod: return
+
+    ori_obj = bpy.context.object
+    bpy.context.view_layer.objects.active = obj
+
+    bpy.ops.object.modifier_move_to_index(modifier=mod.name, 
+            index=min(ys.ori_armature_index, len(obj.modifiers)-1))
+
+    bpy.context.view_layer.objects.active = ori_obj
