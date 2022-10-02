@@ -98,18 +98,12 @@ class YSSubdivide(bpy.types.Operator):
             return {'CANCELLED'}
 
         ys.max_levels += 1
-        ys.levels = ys.max_levels
-
-        if subsurf:
-            subsurf.levels = ys.max_levels
-            subsurf.render_levels = ys.max_levels
 
         if multires:
             if multires.total_levels < ys.max_levels:
                 bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
-            multires.levels = ys.max_levels
-            multires.sculpt_levels = ys.max_levels
-            multires.render_levels = ys.max_levels
+
+        ys.levels = ys.max_levels
 
         return {'FINISHED'}
 
@@ -134,17 +128,10 @@ class YSDeleteHigherSubdivision(bpy.types.Operator):
             return {'CANCELLED'}
 
         ys.max_levels -= 1
-        ys.levels = ys.max_levels
-
-        if subsurf:
-            subsurf.levels = ys.max_levels
-            subsurf.render_levels = ys.max_levels
+        if ys.levels > ys.max_levels:
+            ys.levels = ys.max_levels
 
         if multires:
-            multires.levels = ys.max_levels
-            multires.sculpt_levels = ys.max_levels
-            multires.render_levels = ys.max_levels
-
             bpy.ops.object.multires_higher_levels_delete(modifier=multires.name)
 
         return {'FINISHED'}
