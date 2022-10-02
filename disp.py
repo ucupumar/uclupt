@@ -312,7 +312,7 @@ def bake_multires_to_layer(obj, layer):
     context.view_layer.objects.active = obj
     obj.select_set(True)
 
-class YSApplySculptToVDMLayer(bpy.types.Operator):
+class YSApplySculptToLayer(bpy.types.Operator):
     bl_idname = "mesh.y_apply_sculpt_to_vdm_layer"
     bl_label = "Apply Sculpt to Layer"
     bl_description = "Apply sculpt to vector displacement layer"
@@ -332,7 +332,6 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
             self.report({'ERROR'}, "Cannot get active layer!")
             return {'CANCELLED'}
-
 
         if not any([m for m in obj.modifiers if m.type == 'MULTIRES']):
             self.report({'ERROR'}, "Need multires modifier!")
@@ -367,6 +366,39 @@ class YSApplySculptToVDMLayer(bpy.types.Operator):
         ys.levels = ori_levels
 
         print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
+
+        return {'FINISHED'}
+
+class YSCancelSculpt(bpy.types.Operator):
+    bl_idname = "mesh.y_cancel_sculpt_layer"
+    bl_label = "Cancel Sculpt Layer"
+    bl_description = "Cancel sculpting layer and back to layer editor"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        ys_tree = get_active_ysculpt_tree()
+        if not ys_tree: return False
+        return len(ys_tree.ys.layers) > 0
+
+    def execute(self, context):
+        obj = context.object
+
+        # Remove multires
+        for mod in reversed(obj.modifiers):
+            if mod.type == 'MULTIRES':
+                bpy.ops.object.modifier_remove(modifier=mod.name)
+
+        # Recover modifiers
+        geo, subsurf = get_active_ysculpt_modifiers()
+        if geo:
+            geo.show_viewport = True
+            geo.show_render = True
+        if subsurf:
+            subsurf.show_viewport = True
+            subsurf.show_render = True
+
+        bpy.ops.object.mode_set(mode='OBJECT')
 
         return {'FINISHED'}
 
@@ -470,9 +502,11 @@ class YSSculptLayer(bpy.types.Operator):
         return {'FINISHED'}
 
 def register():
-    bpy.utils.register_class(YSApplySculptToVDMLayer)
+    bpy.utils.register_class(YSApplySculptToLayer)
     bpy.utils.register_class(YSSculptLayer)
+    bpy.utils.register_class(YSCancelSculpt)
 
 def unregister():
-    bpy.utils.unregister_class(YSApplySculptToVDMLayer)
+    bpy.utils.unregister_class(YSApplySculptToLayer)
     bpy.utils.unregister_class(YSSculptLayer)
+    bpy.utils.unregister_class(YSCancelSculpt)

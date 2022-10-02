@@ -102,6 +102,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             if obj.mode == 'SCULPT':
                 if multires:
                     row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    row = col.row()
+                    row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')
                 else:
                     row.alert = True
                     row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
@@ -111,6 +113,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                     row.alert = True
                     row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
                     row.alert = False
+                    row = col.row()
+                    row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')
                 else:
                     row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
 
