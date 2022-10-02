@@ -453,6 +453,16 @@ class YSSculptLayer(bpy.types.Operator):
         # Get modifiers
         geo, subsurf = get_ysculpt_modifiers(obj)
 
+        # Disable other modifiers
+        ori_show_viewports = {}
+        ori_show_renders = {}
+        for m in obj.modifiers:
+            if m != subsurf and m != geo:
+                ori_show_viewports[m.name] = m.show_viewport
+                ori_show_renders[m.name] = m.show_render
+                m.show_viewport = False
+                m.show_render = False
+
         # Set subsurf to highest level
         subsurf.levels = ys.max_levels
 
@@ -497,6 +507,14 @@ class YSSculptLayer(bpy.types.Operator):
         # Use current levels
         multires.levels = ys.levels
         multires.sculpt_levels = ys.levels
+
+        # Enable some modifiers again
+        for mod_name, ori_show_viewport in ori_show_viewports.items():
+            m = obj.modifiers.get(mod_name)
+            if m: m.show_viewport = ori_show_viewport
+        for mod_name, ori_show_render in ori_show_renders.items():
+            m = obj.modifiers.get(mod_name)
+            if m: m.show_render = ori_show_render
 
         bpy.ops.object.mode_set(mode='SCULPT')
         return {'FINISHED'}

@@ -24,19 +24,22 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
-
 class UCLUPT_PT_main_panel(bpy.types.Panel):
     bl_label = "Uclupt"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Uclupt"
 
+    @classmethod
+    def poll(cls, context):
+        return context.object
+
     def draw(self, context):
         obj = context.object
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys if ys_tree else None
         multires = get_active_multires_modifier()
-        geo, subsurf = get_ysculpt_modifiers(obj)
+        geo, subsurf, geo_idx, subsurf_idx = get_ysculpt_modifiers(obj, return_indices=True)
 
         col = self.layout.column()
 
@@ -45,6 +48,20 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
+            return
+
+        if not subsurf:
+            row = col.row()
+            row.alert = True
+            row.operator('mesh.ys_fix_subsurf_modifier', icon='ERROR', text='Fix Missing Subsurf')
+            row.alert = False
+            return
+
+        if subsurf_idx > geo_idx:
+            row = col.row()
+            row.alert = True
+            row.operator('mesh.ys_fix_subsurf_modifier', icon='ERROR', text='Fix Wrong Subsurf Order')
+            row.alert = False
             return
 
         # Subdivion settings

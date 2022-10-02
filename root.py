@@ -76,6 +76,29 @@ class YCreateYScluptNode(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YSFixSubsurf(bpy.types.Operator):
+    bl_idname = "mesh.ys_fix_subsurf_modifier"
+    bl_label = "Fix Subsurf Modifier"
+    bl_description = "Fix Subsurf modifier"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def execute(self, context):
+        obj = context.object
+        geo, subsurf, geo_idx, subsurf_idx = get_ysculpt_modifiers(obj, return_indices=True)
+
+        if not subsurf:
+            bpy.ops.object.modifier_add(type='SUBSURF')
+
+        if subsurf_idx > geo_idx:
+            for i in range(subsurf_idx-geo_idx):
+                bpy.ops.object.modifier_move_up(modifier=subsurf.name)
+
+        return {'FINISHED'}
+
 class YSSubdivide(bpy.types.Operator):
     bl_idname = "mesh.y_subdivide_mesh"
     bl_label = "Subdivide Mesh"
@@ -186,6 +209,7 @@ def register():
     bpy.utils.register_class(YCreateYScluptNode)
     bpy.utils.register_class(YSSubdivide)
     bpy.utils.register_class(YSDeleteHigherSubdivision)
+    bpy.utils.register_class(YSFixSubsurf)
     bpy.utils.register_class(YSculpt)
 
     bpy.types.GeometryNodeTree.ys = PointerProperty(type=YSculpt)
@@ -194,4 +218,5 @@ def unregister():
     bpy.utils.unregister_class(YCreateYScluptNode)
     bpy.utils.unregister_class(YSSubdivide)
     bpy.utils.unregister_class(YSDeleteHigherSubdivision)
+    bpy.utils.unregister_class(YSFixSubsurf)
     bpy.utils.unregister_class(YSculpt)

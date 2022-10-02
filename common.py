@@ -126,21 +126,31 @@ def get_active_ysculpt_tree():
 
     return get_ysculpt_tree(obj)
 
-def get_ysculpt_modifiers(obj):
+def get_ysculpt_modifiers(obj, return_indices=False):
     subsurf = None
     geo = None
 
+    subsurf_idx = -1
+    geo_idx = -1
+
     if obj.type == 'MESH':
 
-        for mod in obj.modifiers:
-            if mod.type == 'SUBSURF' and subsurf == None:
+        for i, mod in enumerate(obj.modifiers):
+            if mod.type == 'SUBSURF':
                 subsurf = mod
+                subsurf_idx = i
                 break
 
-        for mod in obj.modifiers:
+        for i, mod in enumerate(obj.modifiers):
             if mod.type == 'NODES' and mod.node_group and mod.node_group.ys.is_ysculpt_node:
                 geo = mod
+                geo_idx = i
                 break
+
+    #correct_order = geo_idx > subsurf_idx or subsurf_idx == -1 or geo_idx == -1
+
+    if return_indices:
+        return geo, subsurf, geo_idx, subsurf_idx
 
     return geo, subsurf
 
@@ -250,3 +260,4 @@ def get_first_unpinned_image_editor_space(context, return_index=False):
         return space, index
 
     return space
+
