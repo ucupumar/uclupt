@@ -351,9 +351,6 @@ class YSApplySculptToLayer(bpy.types.Operator):
                 ori_show_renders[m.name] = m.show_render
                 m.show_viewport = False
                 m.show_render = False
-            else:
-                m.show_viewport = True
-                m.show_render = True
 
         # Set to max levels
         ori_levels = ys.levels

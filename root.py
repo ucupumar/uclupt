@@ -11,9 +11,30 @@ class YCreateYScluptNode(bpy.types.Operator):
     bl_description = "New " + get_addon_title() + " Geometry Node Setup"
     bl_options = {'REGISTER', 'UNDO'}
 
+    levels : IntProperty(
+            name = 'Levels', 
+            description = 'Subdivision levels',
+            min=1, max=6,
+            default = 2)
+
     @classmethod
     def poll(cls, context):
         return context.object and context.object.type == 'MESH'
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+        row = self.layout.split(factor=0.35)
+
+        col = row.column()
+        col.label(text='Levels:')
+
+        col = row.column()
+        col.prop(self, 'levels', text='')
 
     def execute(self, context):
         obj = context.object
@@ -70,6 +91,9 @@ class YCreateYScluptNode(bpy.types.Operator):
             #uv_map.data_type = 'FLOAT_VECTOR'
             #tangent = new_node(tree, ys, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
             #bitangent = new_node(tree, ys, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
+
+            # Set levels
+            ys.levels = self.levels
 
             rearrange_ys_nodes(tree)
             reconnect_ys_nodes(tree)
@@ -156,6 +180,7 @@ class YSSubdivide(bpy.types.Operator):
             return {'CANCELLED'}
 
         ys.max_levels += 1
+        subsurf.render_levels = ys.max_levels
 
         if multires:
             if multires.total_levels < ys.max_levels:
@@ -188,6 +213,7 @@ class YSDeleteHigherSubdivision(bpy.types.Operator):
         ys.max_levels -= 1
         if ys.levels > ys.max_levels:
             ys.levels = ys.max_levels
+        subsurf.render_levels = ys.max_levels
 
         if multires:
             bpy.ops.object.multires_higher_levels_delete(modifier=multires.name)
