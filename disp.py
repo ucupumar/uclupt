@@ -524,7 +524,7 @@ class YSSculptLayer(bpy.types.Operator):
         obj.modifiers.active = multires
 
         # Set to max levels
-        for i in range(ys.max_levels-multires.levels):
+        for i in range(ys.max_levels-multires.total_levels):
             bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
 
         # Reshape multires

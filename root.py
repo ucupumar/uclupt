@@ -89,13 +89,47 @@ class YSFixSubsurf(bpy.types.Operator):
     def execute(self, context):
         obj = context.object
         geo, subsurf, geo_idx, subsurf_idx = get_ysculpt_modifiers(obj, return_indices=True)
+        ys_tree = get_ysculpt_tree(obj)
+        ys = ys_tree.ys
 
+        # Add subsurf if there's none
         if not subsurf:
             bpy.ops.object.modifier_add(type='SUBSURF')
+            subsurf_idx = len(obj.modifiers)-1
 
+        # Fix order
         if subsurf_idx > geo_idx:
-            for i in range(subsurf_idx-geo_idx):
-                bpy.ops.object.modifier_move_up(modifier=subsurf.name)
+            bpy.ops.object.modifier_move_to_index(subsurf.name, geo_idx)
+
+        # Get the modifiers again to avoid wrong pointers
+        geo, subsurf = get_ysculpt_modifiers(obj)
+
+        # Set levels
+        if subsurf:
+            subsurf.levels = ys.levels
+            subsurf.render_levels = ys.max_levels
+
+        multires = get_multires_modifier(obj)
+        if multires:
+            # Go to sculpt mode if subsurf and multires are on at the same time
+            if (subsurf.show_viewport or subsurf.show_render) and (multires.show_viewport or show_render):
+                bpy.ops.mesh.y_sculpt_layer()
+            else:
+
+                ## Hide subsurf and geonodes if multires exists
+                #subsurf.show_viewport = False
+                #subsurf.show_render = False
+                #geo.show_viewport = False
+                #geo.show_render = False
+
+                # Set multires levels
+                if multires.total_levels < ys.max_levels:
+                    for i in range(ys.max_levels-multires.total_levels):
+                        bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
+
+                multires.levels = ys.levels
+                multires.sculpt_levels = ys.levels
+                multires.render_levels = ys.max_levels
 
         return {'FINISHED'}
 

@@ -298,3 +298,34 @@ def restore_armature_order(obj):
             index=min(ys.ori_armature_index, len(obj.modifiers)-1))
 
     bpy.context.view_layer.objects.active = ori_obj
+
+def is_subdiv_levels_insync(obj):
+    ys_tree = get_ysculpt_tree(obj)
+    if not ys_tree: return True
+    ys = ys_tree.ys
+
+    geo, subsurf = get_ysculpt_modifiers(obj)
+    multires = get_multires_modifier(obj)
+
+    # Check if multires and subsuf are exists at the same time
+    if multires and subsurf:
+        if ((multires.show_viewport and subsurf.show_viewport) or 
+            (multires.show_render and subsurf.show_render)):
+            return False
+
+    # Check if subdiv levels are insync with ys levels
+    if multires:
+        if (multires.levels != ys.levels or
+            multires.sculpt_levels != ys.levels or
+            multires.render_levels != ys.max_levels
+            ):
+            return False
+
+    if subsurf:
+        if (subsurf.levels != ys.levels or
+            subsurf.render_levels != ys.max_levels
+            ):
+            return False
+
+    return True
+

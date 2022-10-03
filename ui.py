@@ -64,6 +64,13 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             row.alert = False
             return
 
+        if not is_subdiv_levels_insync(obj):
+            row = col.row()
+            row.alert = True
+            row.operator('mesh.ys_fix_subsurf_modifier', icon='ERROR', text='Fix Insync Modifiers')
+            row.alert = False
+            return
+
         # Subdivion settings
         if subsurf and ys:
             col.label(text='Subdivision', icon='MOD_SUBSURF')
