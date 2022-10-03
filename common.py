@@ -322,7 +322,7 @@ def is_subdiv_levels_insync(obj):
             ):
             return False
 
-    if subsurf:
+    elif subsurf:
         if (subsurf.levels != ys.levels or
             subsurf.render_levels != ys.max_levels
             ):
