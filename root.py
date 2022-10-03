@@ -96,6 +96,7 @@ class YSFixSubsurf(bpy.types.Operator):
         if not subsurf:
             bpy.ops.object.modifier_add(type='SUBSURF')
             subsurf_idx = len(obj.modifiers)-1
+            subsurf = obj.modifiers[subsurf_idx]
 
         # Fix order
         if subsurf_idx > geo_idx:
