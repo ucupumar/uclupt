@@ -99,7 +99,7 @@ class YSFixSubsurf(bpy.types.Operator):
 
         # Fix order
         if subsurf_idx > geo_idx:
-            bpy.ops.object.modifier_move_to_index(subsurf.name, geo_idx)
+            bpy.ops.object.modifier_move_to_index(modifier=subsurf.name, index=geo_idx)
 
         # Get the modifiers again to avoid wrong pointers
         geo, subsurf = get_ysculpt_modifiers(obj)
