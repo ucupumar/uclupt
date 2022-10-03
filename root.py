@@ -45,8 +45,8 @@ class YCreateYScluptNode(bpy.types.Operator):
         else:
             bpy.ops.object.modifier_add(type='SUBSURF')
             subsurf = obj.modifiers[-1]
-            subsurf.levels = 5
-            subsurf.render_levels = 5
+        subsurf.levels = self.levels
+        subsurf.render_levels = self.levels
 
         # Get geonode
         geomod = [m for m in obj.modifiers if m.type == 'NODES' and m.node_group.ys.is_ysculpt_node]
@@ -93,6 +93,7 @@ class YCreateYScluptNode(bpy.types.Operator):
             #bitangent = new_node(tree, ys, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
 
             # Set levels
+            ys.max_levels = self.levels
             ys.levels = self.levels
 
             rearrange_ys_nodes(tree)
