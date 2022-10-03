@@ -11,9 +11,60 @@ class YSNewLayer(bpy.types.Operator):
     bl_description = "New " + get_addon_title() + " Layer"
     bl_options = {'REGISTER', 'UNDO'}
 
+    name : StringProperty(
+            name = 'New Layer Name',
+            description = 'New layer name',
+            default='')
+
+    width : IntProperty(name='Width', default = 1024, min=1, max=4096)
+    height : IntProperty(name='Height', default = 1024, min=1, max=4096)
+
+    uv_map : StringProperty(default='')
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
     @classmethod
     def poll(cls, context):
         return get_active_ysculpt_tree()
+
+    def invoke(self, context, event):
+        obj = context.object
+
+        # Set name
+        self.name = get_unique_name(obj.name + ' Layer', bpy.data.images)
+
+        # Set uv name
+        active_uv = obj.data.uv_layers.active
+        self.uv_map = active_uv.name
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV):
+                self.uv_map_coll.add().name = uv.name
+
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+
+        row = self.layout.split(factor=0.4)
+
+        col = row.column(align=False)
+
+        col.label(text='Name:')
+        col.label(text='Width:')
+        col.label(text='Height:')
+        col.label(text='UV Map:')
+
+        col = row.column(align=False)
+
+        col.prop(self, 'name', text='')
+        col.prop(self, 'width', text='')
+        col.prop(self, 'height', text='')
+
+        col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
 
     def execute(self, context):
         obj = context.object
@@ -21,7 +72,8 @@ class YSNewLayer(bpy.types.Operator):
         ys = ys_tree.ys
         
         layer = ys.layers.add()
-        layer.name = 'Layer ' + str(len(ys.layers) - 1)
+        #layer.name = 'Layer ' + str(len(ys.layers) - 1)
+        layer.name = get_unique_name(self.name, bpy.data.images)
 
         ys.active_layer_index = len(ys.layers) - 1
         
@@ -48,7 +100,7 @@ class YSNewLayer(bpy.types.Operator):
 
         uv_map = new_node(layer_tree, layer, 'uv_map', 'GeometryNodeInputNamedAttribute', 'UV Map') 
         uv_map.data_type = 'FLOAT_VECTOR'
-        uv_map.inputs[0].default_value = obj.data.uv_layers.active.name
+        uv_map.inputs[0].default_value = self.uv_map
 
         source = new_node(layer_tree, layer, 'source', 'GeometryNodeImageTexture', 'Source') 
         tangent = new_node(layer_tree, layer, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
@@ -62,7 +114,7 @@ class YSNewLayer(bpy.types.Operator):
 
         # Create image data
         image = bpy.data.images.new(name=layer.name, 
-                width=1024, height=1024, alpha=False, float_buffer=True)
+                width=self.width, height=self.height, alpha=False, float_buffer=True)
         image.generated_color = (0,0,0,1)
         source.inputs[0].default_value = image
 

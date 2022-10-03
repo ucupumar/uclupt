@@ -59,7 +59,7 @@ class YCreateYScluptNode(bpy.types.Operator):
             #tree = geomod.node_group
             tree = bpy.data.node_groups.new(get_addon_title(), 'GeometryNodeTree')
             geomod.node_group = tree
-            tree.name = get_addon_title()
+            tree.name = get_addon_title() + ' ' + obj.name
             ys = tree.ys
             ys.is_ysculpt_node = True
             ys.version = get_current_version_str()

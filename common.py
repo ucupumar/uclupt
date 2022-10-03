@@ -1,4 +1,4 @@
-import bpy, os, sys
+import bpy, os, sys, re
 from mathutils import *
 
 TREE_START = 'Group Input'
@@ -10,6 +10,8 @@ OFFSET_PROCESS = 'Offset Process'
 BASE_ATTR = 'yS Base'
 OFFSET_ATTR = 'yS Offset'
 BSIGN_ATTR = 'yS Bitangent Sign'
+
+YP_TEMP_UV = '~TL Temp Paint UV'
 
 def get_addon_name():
     return os.path.basename(os.path.dirname(bpy.path.abspath(__file__)))
@@ -330,3 +332,33 @@ def is_subdiv_levels_insync(obj):
 
     return True
 
+# Check if name already available on the list
+def get_unique_name(name, items, surname = ''):
+
+    if surname != '':
+        unique_name = name + ' ' + surname
+    else: unique_name = name
+
+    name_found = [item for item in items if item.name == unique_name]
+    if name_found:
+
+        m = re.match(r'^(.+)\s(\d*)$', name)
+        if m:
+            name = m.group(1)
+            i = int(m.group(2))
+        else:
+            i = 1
+
+        while True:
+
+            if surname != '':
+                new_name = name + ' ' + str(i) + ' ' + surname
+            else: new_name = name + ' ' + str(i)
+
+            name_found = [item for item in items if item.name == new_name]
+            if not name_found:
+                unique_name = new_name
+                break
+            i += 1
+
+    return unique_name
