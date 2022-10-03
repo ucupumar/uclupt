@@ -242,6 +242,7 @@ def get_layer_uv_name(layer):
 
 def get_layer_image(layer):
     layer_tree = get_layer_tree(layer)
+    if not layer_tree: return None
     source = layer_tree.nodes.get(layer.source)
     if not source: return None
     return source.inputs[0].default_value
