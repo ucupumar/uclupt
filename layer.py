@@ -105,9 +105,11 @@ class YSNewLayer(bpy.types.Operator):
         source = new_node(layer_tree, layer, 'source', 'GeometryNodeImageTexture', 'Source') 
         tangent = new_node(layer_tree, layer, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
         bitangent = new_node(layer_tree, layer, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
-        blend = new_node(layer_tree, layer, 'blend', 'ShaderNodeMixRGB', 'Blend') 
-        blend.inputs[0].default_value = 1.0
-        blend.blend_type = 'ADD'
+        #blend = new_node(layer_tree, layer, 'blend', 'ShaderNodeMixRGB', 'Blend') 
+        #blend.inputs[0].default_value = 1.0
+        #blend.blend_type = 'ADD'
+        blend = new_node(layer_tree, layer, 'blend', 'GeometryNodeGroup', 'Blend') 
+        blend.node_tree = get_blend_geo_tree()
 
         tangent2world = new_node(layer_tree, layer, 'tangent2world', 'GeometryNodeGroup', 'Tangent to World') 
         tangent2world.node_tree = get_tangent2world_geom_tree()

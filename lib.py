@@ -8,6 +8,7 @@ SHA_WORLD2TANGENT = '~ySL SHA World2Tangent'
 SHA_OBJECT2TANGENT = '~ySL SHA Object2Tangent'
 SHA_BITANGENT_CALC = '~ySL SHA Bitangent Calculation'
 SHA_PACK_VECTOR = '~ySL SHA Pack Vector'
+GEO_BLEND = '~ySL GEO Blend'
 MAT_OFFSET_TANGENT_SPACE = '~ySL MAT Tangent Space Offset'
 MAT_TANGENT_BAKE = '~ySL MAT Tangent Bake'
 MAT_BITANGENT_BAKE = '~ySL MAT Bitangent Bake'
@@ -278,6 +279,55 @@ def get_object2tangent_shader_tree():
         links.new(dotnormal.outputs['Value'], finalvec.inputs[2])
 
         links.new(finalvec.outputs[0], end.inputs[0])
+
+    return tree
+
+def get_blend_geo_tree():
+    tree = bpy.data.node_groups.get(GEO_BLEND)
+    if not tree:
+        tree = bpy.data.node_groups.new(GEO_BLEND, 'GeometryNodeTree')
+        nodes = tree.nodes
+        links = tree.links
+
+        create_essential_nodes(tree)
+        start = nodes.get(TREE_START)
+        end = nodes.get(TREE_END)
+
+        # Create IO
+        inp = create_input(tree, 'Fac', 'NodeSocketFloatFactor')
+        inp.default_value = 1.0
+        inp.min_value = 0.0
+        inp.max_value = 1.0
+        create_input(tree, 'Vector', 'NodeSocketVector')
+        create_input(tree, 'Vector', 'NodeSocketVector')
+        create_output(tree, 'Vector', 'NodeSocketVector')
+
+        # Create nodes
+        multiply = nodes.new('ShaderNodeVectorMath')
+        multiply.operation = 'MULTIPLY'
+        add = nodes.new('ShaderNodeVectorMath')
+        add.operation = 'ADD'
+
+        # Node Arrangements
+        loc = Vector((0, 0))
+
+        start.location = loc
+        loc.x += 200
+
+        multiply.location = loc
+        loc.x += 200
+
+        add.location = loc
+        loc.x += 200
+
+        end.location = loc
+
+        # Node connection
+        links.new(start.outputs[0], multiply.inputs[1])
+        links.new(start.outputs[2], multiply.inputs[0])
+        links.new(multiply.outputs[0], add.inputs[1])
+        links.new(start.outputs[1], add.inputs[0])
+        links.new(add.outputs[0], end.inputs[0])
 
     return tree
 
@@ -717,7 +767,8 @@ class YSDebugLib(bpy.types.Operator):
         #tree = get_pack_vector_shader_tree()
         #tree = get_tangent_bake_mat()
         #tree = get_object2tangent_shader_tree()
-        tree = get_bitangent_bake_mat()
+        #tree = get_bitangent_bake_mat()
+        tree = get_blend_geo_tree()
         return {'FINISHED'}
 
 def register():
