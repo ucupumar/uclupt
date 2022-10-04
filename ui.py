@@ -24,6 +24,28 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
+class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
+    #bl_idname = "OBJECT_PT_YS_layer_properties"
+    bl_label = "Layer Properties"
+    bl_description = "Layer Properties"
+    bl_ui_units_x = 8
+    #bl_options = {'INSTANCED'}
+    #bl_options = {'INSTANCED', 'DRAW_BOX'}
+    bl_space_type = 'VIEW_3D' # 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    #bl_context = "object"
+
+    def draw(self, context):
+        layer = context.layer
+        layer_tree = get_layer_tree(layer)
+
+        uv_map = layer_tree.nodes.get(layer.uv_map)
+
+        col = self.layout.column()
+        col.label(text=layer.name)
+        col.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+        pass
+
 class UCLUPT_PT_main_panel(bpy.types.Panel):
     bl_label = "Uclupt"
     bl_space_type = "VIEW_3D"
@@ -145,6 +167,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             if not multires:
                 row = col.row()
                 row.label(text=image.name, icon='IMAGE_DATA')
+                row.context_pointer_set('layer', layer)
+                row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
 
                 row = col.row()
                 row.label(text='Blend:')
@@ -159,8 +183,10 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(NODE_UL_YSculpt_layers)
+    bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.register_class(UCLUPT_PT_main_panel)
 
 def unregister():
     bpy.utils.unregister_class(NODE_UL_YSculpt_layers)
+    bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.unregister_class(UCLUPT_PT_main_panel)
