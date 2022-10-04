@@ -6,10 +6,10 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
 
         layer = item
         tree = get_layer_tree(layer)
-        master = layout.row(align=True)
+        split = layout.split(factor=0.66, align=False)
         multires = get_active_multires_modifier()
 
-        row = master.row(align=True)
+        row = split.row(align=True)
 
         source = tree.nodes.get(layer.source)
         image = source.inputs[0].default_value
@@ -18,8 +18,12 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
         else:
             row.prop(layer, 'name', text='', emboss=False, icon='TEXTURE')
 
+        blend = tree.nodes.get(layer.blend)
+
+        row = split.row()
+        row.prop(blend.inputs[0], 'default_value', text='', emboss=False)
+
         if not multires:
-            row = master.row()
             if layer.enable: eye_icon = 'HIDE_OFF'
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
