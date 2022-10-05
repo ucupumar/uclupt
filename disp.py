@@ -4,7 +4,7 @@ from .lib import *
 from .bake_common import *
 from .common import *
 
-def get_tangent_bitangent_images(obj, uv_name):
+def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
 
     tanimage = None
     bitimage = None
@@ -24,11 +24,14 @@ def get_tangent_bitangent_images(obj, uv_name):
 
             break
 
+    is_newly_created = False
+
     if not tanimage:
         tanimage_name = obj.name + '_' + uv_name + '_tangent'
         tanimage = bpy.data.images.new(name=tanimage_name,
                 width=1024, height=1024, alpha=False, float_buffer=True)
         tanimage.generated_color = (0,0,0,1)
+        is_newly_created = True
 
     if not bitimage:
         bitimage_name = obj.name + '_' + uv_name + '_bitangent'
@@ -48,6 +51,9 @@ def get_tangent_bitangent_images(obj, uv_name):
             bitangent = layer_tree.nodes.get(layer.bitangent)
             if bitimage != bitangent.inputs[0].default_value:
                 bitangent.inputs[0].default_value = bitimage
+
+    if return_is_newly_created:
+        return tanimage, bitimage, is_newly_created
 
     return tanimage, bitimage
 
@@ -87,6 +93,8 @@ def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh, intensity=1.
     return att, max_value
 
 def bake_tangent(obj, uv_name=''):
+
+    print('INFO: Baking tangent and bitangent of ' + uv_name + '...')
 
     context = bpy.context
     scene = context.scene
@@ -195,6 +203,7 @@ def bake_tangent(obj, uv_name=''):
 
 def bake_multires_to_layer(obj, layer): 
 
+
     context = bpy.context
     scene = context.scene
 
@@ -204,6 +213,8 @@ def bake_multires_to_layer(obj, layer):
     set_active_uv(obj, uv_name)
 
     image = get_layer_image(layer)
+
+    print('INFO: Baking multires to ' + image.name  + '...')
 
     blend = layer_tree.nodes.get(layer.blend)
     intensity = blend.inputs[0].default_value
@@ -217,7 +228,7 @@ def bake_multires_to_layer(obj, layer):
     if not obj.select_get():
         obj.select_set(True)
 
-    # Temp object 0
+    # Temp object 0: Base
     temp0 = obj.copy()
     scene.collection.objects.link(temp0)
     temp0.data = temp0.data.copy()
@@ -239,7 +250,7 @@ def bake_multires_to_layer(obj, layer):
     tsubsurf.render_levels = max_level
     bpy.ops.object.modifier_apply(modifier=tsubsurf.name)
 
-    # Temp object 1
+    # Temp object 1: Mesh with active layer disabled
     temp1 = temp0.copy()
     scene.collection.objects.link(temp1)
     temp1.data = temp1.data.copy()
@@ -257,7 +268,7 @@ def bake_multires_to_layer(obj, layer):
     for mod in reversed(ys_mods):
         bpy.ops.object.modifier_remove(modifier=mod.name)
     
-    # Temp object 2
+    # Temp object 2: Sculpted/Multires mesh
     temp2 = obj.copy()
     scene.collection.objects.link(temp2)
     temp2.data = temp2.data.copy()
@@ -356,9 +367,20 @@ class YSApplySculptToLayer(bpy.types.Operator):
         ori_levels = ys.levels
         ys.levels = ys.max_levels
 
-        bake_tangent(obj, uv_name)
+        # Get tangent image
+        tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=True)
+
+        # Check if tangent image is just created, bake if that's the case
+        if is_newly_created_tangent:
+            bake_tangent(obj, uv_name)
+
+        # Bake multires to layer
         bake_multires_to_layer(obj, layer)
         #return {'FINISHED'}
+
+        # Bake tangent if it's not just created
+        if not is_newly_created_tangent:
+            bake_tangent(obj, uv_name)
 
         # Remove multires
         for mod in reversed(obj.modifiers):
