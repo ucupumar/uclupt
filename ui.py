@@ -172,11 +172,16 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 row = col.row()
                 row.label(text=image.name, icon='IMAGE_DATA')
                 row.context_pointer_set('layer', layer)
-                row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
+                #row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
 
-                row = col.row()
+                row = col.split(factor=0.33, align=False)
                 row.label(text='Blend:')
                 row.prop(blend.inputs[0], 'default_value', text='')
+
+                row = col.split(factor=0.33, align=False)
+                row.label(text='UV Map:')
+                uv_map = layer_tree.nodes.get(layer.uv_map)
+                row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
             
             #row = col.row()
             #image = source.inputs[0].default_value
