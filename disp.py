@@ -481,6 +481,10 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Active layer need to be enabled!")
             return {'CANCELLED'}
 
+        if layer.use_mapping:
+            self.report({'ERROR'}, "Cannot sculpt layer with mapping enabled!")
+            return {'CANCELLED'}
+
         blend = layer_tree.nodes.get(layer.blend)
         intensity = blend.inputs[0].default_value
 
