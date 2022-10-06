@@ -345,10 +345,12 @@ def get_mapping_geo_tree():
 
         # Create IO
         create_input(tree, 'Vector', 'NodeSocketVector')
-        inp = create_input(tree, 'Translate X', 'NodeSocketFloat')
-        inp.default_value = 0.0
-        inp = create_input(tree, 'Translate Y', 'NodeSocketFloat')
-        inp.default_value = 0.0
+        #inp = create_input(tree, 'Translate X', 'NodeSocketFloat')
+        #inp.default_value = 0.0
+        #inp = create_input(tree, 'Translate Y', 'NodeSocketFloat')
+        #inp.default_value = 0.0
+        inp = create_input(tree, 'Translate', 'NodeSocketVector')
+        inp.default_value = (0.0, 0.0, 0.0)
         inp = create_input(tree, 'Rotation Angle', 'NodeSocketFloatAngle')
         inp.default_value = 0.0
         inp = create_input(tree, 'Scale', 'NodeSocketVector')
@@ -360,11 +362,9 @@ def get_mapping_geo_tree():
         create_output(tree, 'Scale Vector', 'NodeSocketVector')
 
         # Create nodes
-        combine_translate = nodes.new('ShaderNodeCombineXYZ')
+        #combine_translate = nodes.new('ShaderNodeCombineXYZ')
         translate = nodes.new('ShaderNodeVectorMath')
         translate.operation = 'ADD'
-        #center_offset = nodes.new('ShaderNodeVectorMath')
-        #center_offset.operation = 'SUBTRACT'
 
         rotate = nodes.new('ShaderNodeVectorRotate')
         rotate.inputs['Center'].default_value = (0.5, 0.5, 0.0)
@@ -383,16 +383,13 @@ def get_mapping_geo_tree():
         start.location = loc
         loc.x += 200
 
-        combine_translate.location = loc
+        #combine_translate.location = loc
         #loc.x += 200
-        loc.y -= 200
+        #loc.y -= 200
 
         translate.location = loc
-        loc.y -= 200
-
-        #center_offset.location = loc
-        #loc.y = 0
-        #loc.x += 200
+        loc.y = 0
+        loc.x += 200
 
         rotate.location = loc
         loc.x += 200
@@ -412,8 +409,8 @@ def get_mapping_geo_tree():
         end.location = loc
 
         # Node connection
-        links.new(start.outputs['Translate X'], combine_translate.inputs[0])
-        links.new(start.outputs['Translate Y'], combine_translate.inputs[1])
+        #links.new(start.outputs['Translate X'], combine_translate.inputs[0])
+        #links.new(start.outputs['Translate Y'], combine_translate.inputs[1])
 
         vec = start.outputs['Vector']
 
@@ -424,10 +421,9 @@ def get_mapping_geo_tree():
         vec = create_link(tree, vec, scale_offset_1.inputs[0])[0]
 
         center = start.outputs['Center']
-        #center = create_link(tree, center, center_offset.inputs[0])[0]
 
-        links.new(combine_translate.outputs[0], translate.inputs[1])
-        #links.new(combine_translate.outputs[0], center_offset.inputs[1])
+        #links.new(combine_translate.outputs[0], translate.inputs[1])
+        links.new(start.outputs['Translate'], translate.inputs[1])
         links.new(start.outputs['Rotation Angle'], rotate.inputs['Angle'])
         links.new(center, rotate.inputs['Center'])
         links.new(center, scale_offset_0.inputs[1])
