@@ -11,6 +11,8 @@ BASE_ATTR = 'yS Base'
 OFFSET_ATTR = 'yS Offset'
 BSIGN_ATTR = 'yS Bitangent Sign'
 
+LAYER_GROUP_PREFIX = '~yS '
+
 YP_TEMP_UV = '~TL Temp Paint UV'
 
 def get_addon_name():

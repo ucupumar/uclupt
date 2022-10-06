@@ -28,6 +28,24 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
+class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
+    bl_label = "Mapping Properties"
+    bl_description = "Mapping Properties"
+    bl_ui_units_x = 10
+    #bl_options = {'INSTANCED'}
+    #bl_options = {'INSTANCED', 'DRAW_BOX'}
+    bl_space_type = 'VIEW_3D' # 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+
+    def draw(self, context):
+        layer = context.layer
+        mapping = context.mapping
+        col = self.layout.column()
+        col.label(text='Mapping')
+        split = col.split(factor=0.33)
+        split.label(text='Center:')
+        split.prop(mapping.inputs[4], 'default_value', text='')
+
 class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
     bl_label = "Subdivion Properties"
     bl_description = "Subdivision Properties"
@@ -53,7 +71,6 @@ class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
         else:
             title = 'Catmull-Clark' if subsurf.subdivision_type == 'CATMULL_CLARK' else 'Simple'
             col.label(text=title)
-
 
 class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
     #bl_idname = "OBJECT_PT_YS_layer_properties"
@@ -96,8 +113,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         col = self.layout.column()
 
-        col.operator('mesh.ys_debug_lib', icon='QUESTION')
-        col.separator()
+        #col.operator('mesh.ys_debug_lib', icon='QUESTION')
+        #col.separator()
 
         if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
@@ -214,8 +231,27 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
 
                 row = col.split(factor=0.33, align=False)
-                row.label(text='Mapping:')
-                row.prop(layer, 'use_mapping', text='')
+                row.label(text='')
+                rrow = row.row()
+                rrow.prop(layer, 'use_mapping', text='Use Mapping')
+
+                mapping = layer_tree.nodes.get(layer.mapping)
+                if layer.use_mapping and mapping:
+                    rrow.context_pointer_set('layer', layer)
+                    rrow.context_pointer_set('mapping', mapping)
+                    rrow.popover(panel="VIEW3D_PT_ys_mapping_props", text="", icon='DOWNARROW_HLT')
+
+                    row = col.split(factor=0.33, align=False)
+                    row.label(text='Translate:')
+                    row.prop(mapping.inputs[1], 'default_value', text='')
+
+                    row = col.split(factor=0.33, align=False)
+                    row.label(text='Rotation:')
+                    row.prop(mapping.inputs[2], 'default_value', text='')
+
+                    row = col.split(factor=0.33, align=False)
+                    row.label(text='Scale:')
+                    row.prop(mapping.inputs[3], 'default_value', text='')
             
             #row = col.row()
             #image = source.inputs[0].default_value
@@ -227,11 +263,13 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(NODE_UL_YSculpt_layers)
     bpy.utils.register_class(VIEW3D_PT_ys_subdiv_props)
+    bpy.utils.register_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.register_class(UCLUPT_PT_main_panel)
 
 def unregister():
     bpy.utils.unregister_class(NODE_UL_YSculpt_layers)
     bpy.utils.unregister_class(VIEW3D_PT_ys_subdiv_props)
+    bpy.utils.unregister_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.unregister_class(UCLUPT_PT_main_panel)

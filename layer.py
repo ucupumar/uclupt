@@ -85,7 +85,7 @@ class YSNewLayer(bpy.types.Operator):
         #layer_tree = tempmod.node_group
         #bpy.ops.object.modifier_remove(modifier=tempmod.name)
 
-        layer_tree = bpy.data.node_groups.new(layer.name, 'GeometryNodeTree')
+        layer_tree = bpy.data.node_groups.new(LAYER_GROUP_PREFIX + layer.name, 'GeometryNodeTree')
         layer_tree.ys.is_ysculpt_layer_node = True
         layer_node = ys_tree.nodes.new('GeometryNodeGroup')
         layer_node.node_tree = layer_tree
@@ -189,10 +189,12 @@ def update_layer_use_mapping(self, context):
         if not mapping:
             mapping = new_node(layer_tree, layer, 'mapping', 'GeometryNodeGroup', 'Mapping') 
             mapping.node_tree = get_mapping_geo_tree()
+
+        if not mapping_scale:
             mapping_scale = new_node(layer_tree, layer, 'mapping_scale', 'ShaderNodeVectorMath', 'Mapping Scale') 
             mapping_scale.operation = 'DIVIDE'
     else:
-        remove_node(layer_tree, layer, 'mapping')
+        #remove_node(layer_tree, layer, 'mapping')
         remove_node(layer_tree, layer, 'mapping_scale')
 
     rearrange_layer_nodes(layer, layer_tree)
