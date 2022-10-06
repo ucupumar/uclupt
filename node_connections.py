@@ -20,6 +20,7 @@ def reconnect_layer_nodes(layer, tree=None):
     source = nodes.get(layer.source)
     mapping = nodes.get(layer.mapping)
     mapping_scale = nodes.get(layer.mapping_scale)
+    mapping_rotate = nodes.get(layer.mapping_rotate)
     uv_map = nodes.get(layer.uv_map)
     tangent = nodes.get(layer.tangent)
     bitangent = nodes.get(layer.bitangent)
@@ -39,7 +40,9 @@ def reconnect_layer_nodes(layer, tree=None):
 
     if layer.use_mapping and mapping and mapping_scale:
         offset = create_link(tree, offset, mapping_scale.inputs[0])[0]
+        offset = create_link(tree, offset, mapping_rotate.inputs[0])[0]
         create_link(tree, mapping.outputs[1], mapping_scale.inputs[1])
+        create_link(tree, mapping.outputs[2], mapping_rotate.inputs['Angle'])
 
     offset = create_link(tree, offset, tangent2world.inputs['Vector'])[0]
 

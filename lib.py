@@ -360,6 +360,7 @@ def get_mapping_geo_tree():
 
         create_output(tree, 'Vector', 'NodeSocketVector')
         create_output(tree, 'Scale Vector', 'NodeSocketVector')
+        create_output(tree, 'Rotation Angle', 'NodeSocketFloatAngle')
 
         # Create nodes
         #combine_translate = nodes.new('ShaderNodeCombineXYZ')
@@ -432,6 +433,7 @@ def get_mapping_geo_tree():
 
         links.new(vec, end.inputs[0])
         links.new(start.outputs['Scale'], end.inputs[1])
+        links.new(start.outputs['Rotation Angle'], end.inputs[2])
 
     return tree
 

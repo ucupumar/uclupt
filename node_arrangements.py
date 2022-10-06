@@ -23,12 +23,6 @@ def rearrange_layer_nodes(layer, tree=None):
 
     # UV Nodes
 
-    check_set_node_loc(tree, layer.tangent2world, loc)
-    loc.y -= 175
-
-    if check_set_node_loc(tree, layer.mapping_scale, loc):
-        loc.y -= 160
-
     check_set_node_loc(tree, layer.source, loc)
     loc.y -= 220
 
@@ -46,6 +40,15 @@ def rearrange_layer_nodes(layer, tree=None):
 
     loc.x += 300
     loc.y = 0
+
+    if check_set_node_loc(tree, layer.mapping_scale, loc):
+        loc.x += 200
+
+    if check_set_node_loc(tree, layer.mapping_rotate, loc):
+        loc.x += 200
+
+    check_set_node_loc(tree, layer.tangent2world, loc)
+    loc.x += 200
 
     check_set_node_loc(tree, layer.blend, loc)
     loc.x += 200

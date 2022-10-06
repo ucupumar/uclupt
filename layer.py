@@ -184,6 +184,7 @@ def update_layer_use_mapping(self, context):
     layer_tree = get_layer_tree(layer)
     mapping = layer_tree.nodes.get(layer.mapping)
     mapping_scale = layer_tree.nodes.get(layer.mapping_scale)
+    mapping_rotate = layer_tree.nodes.get(layer.mapping_rotate)
 
     if layer.use_mapping:
         if not mapping:
@@ -193,9 +194,16 @@ def update_layer_use_mapping(self, context):
         if not mapping_scale:
             mapping_scale = new_node(layer_tree, layer, 'mapping_scale', 'ShaderNodeVectorMath', 'Mapping Scale') 
             mapping_scale.operation = 'MULTIPLY'
+
+        if not mapping_rotate:
+            mapping_rotate = new_node(layer_tree, layer, 'mapping_rotate', 'ShaderNodeVectorRotate', 'Mapping Rotate') 
+            mapping_rotate.inputs['Center'].default_value = (0.0, 0.0, 0.0)
+            mapping_rotate.inputs['Axis'].default_value = (0.0, 0.0, 1.0)
+            mapping_rotate.invert = True
     else:
         #remove_node(layer_tree, layer, 'mapping')
         remove_node(layer_tree, layer, 'mapping_scale')
+        remove_node(layer_tree, layer, 'mapping_rotate')
 
     rearrange_layer_nodes(layer, layer_tree)
     reconnect_layer_nodes(layer, layer_tree)
@@ -228,6 +236,7 @@ class YSLayer(bpy.types.PropertyGroup):
     uv_map : StringProperty(default='')
     mapping : StringProperty(default='')
     mapping_scale : StringProperty(default='')
+    mapping_rotate : StringProperty(default='')
     tangent : StringProperty(default='')
     bitangent : StringProperty(default='')
     tangent2world : StringProperty(default='')
