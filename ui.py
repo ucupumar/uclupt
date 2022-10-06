@@ -76,7 +76,7 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
     #bl_idname = "OBJECT_PT_YS_layer_properties"
     bl_label = "Layer Properties"
     bl_description = "Layer Properties"
-    bl_ui_units_x = 8
+    bl_ui_units_x = 10
     #bl_options = {'INSTANCED'}
     #bl_options = {'INSTANCED', 'DRAW_BOX'}
     bl_space_type = 'VIEW_3D' # 'PROPERTIES'
@@ -87,12 +87,17 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
         layer = context.layer
         layer_tree = get_layer_tree(layer)
 
-        uv_map = layer_tree.nodes.get(layer.uv_map)
+        #uv_map = layer_tree.nodes.get(layer.uv_map)
+        source = layer_tree.nodes.get(layer.source)
 
         col = self.layout.column()
-        col.label(text=layer.name)
-        col.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
-        pass
+        col.label(text=layer.name, icon='IMAGE_DATA')
+        #col.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+
+        if source:
+            split = col.split(factor=0.5)
+            split.label(text='Image Extension')
+            split.prop(source, 'extension', text='')
 
 class UCLUPT_PT_main_panel(bpy.types.Panel):
     bl_label = "Uclupt"
@@ -218,8 +223,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             if not multires:
                 row = col.row()
                 row.label(text=image.name, icon='IMAGE_DATA')
-                #row.context_pointer_set('layer', layer)
-                #row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
+                row.context_pointer_set('layer', layer)
+                row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
 
                 row = col.split(factor=0.33, align=False)
                 row.label(text='Blend:')
