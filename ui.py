@@ -28,6 +28,33 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
+class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
+    bl_label = "Subdivion Properties"
+    bl_description = "Subdivision Properties"
+    bl_ui_units_x = 10
+    #bl_options = {'INSTANCED'}
+    #bl_options = {'INSTANCED', 'DRAW_BOX'}
+    bl_space_type = 'VIEW_3D' # 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+
+    def draw(self, context):
+        ys = context.ys
+        split = self.layout.split(factor=0.5)
+        multires = get_active_multires_modifier()
+        geo, subsurf = get_active_ysculpt_modifiers()
+
+        col = split.column()
+
+        col.label(text='Subdivision Type:')
+
+        col = split.column()
+        if not multires:
+            col.prop(subsurf, 'subdivision_type', text='')
+        else:
+            title = 'Catmull-Clark' if subsurf.subdivision_type == 'CATMULL_CLARK' else 'Simple'
+            col.label(text=title)
+
+
 class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
     #bl_idname = "OBJECT_PT_YS_layer_properties"
     bl_label = "Layer Properties"
@@ -69,8 +96,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         col = self.layout.column()
 
-        #col.operator('mesh.ys_debug_lib', icon='QUESTION')
-        #col.separator()
+        col.operator('mesh.ys_debug_lib', icon='QUESTION')
+        col.separator()
 
         if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
@@ -99,7 +126,10 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         # Subdivion settings
         if subsurf and ys:
-            col.label(text='Subdivision', icon='MOD_SUBSURF')
+            row = col.row()
+            row.label(text='Subdivision', icon='MOD_SUBSURF')
+            row.context_pointer_set('ys', ys)
+            row.popover(panel="VIEW3D_PT_ys_subdiv_props", text="", icon='DOWNARROW_HLT')
             #ccol = col.column(align=True)
             split = col.split(factor=0.85)
             #split.prop(subsurf, 'levels', text='Levels')
@@ -171,7 +201,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             if not multires:
                 row = col.row()
                 row.label(text=image.name, icon='IMAGE_DATA')
-                row.context_pointer_set('layer', layer)
+                #row.context_pointer_set('layer', layer)
                 #row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
 
                 row = col.split(factor=0.33, align=False)
@@ -182,6 +212,10 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 row.label(text='UV Map:')
                 uv_map = layer_tree.nodes.get(layer.uv_map)
                 row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+
+                row = col.split(factor=0.33, align=False)
+                row.label(text='Mapping:')
+                row.prop(layer, 'use_mapping', text='')
             
             #row = col.row()
             #image = source.inputs[0].default_value
@@ -192,10 +226,12 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(NODE_UL_YSculpt_layers)
+    bpy.utils.register_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.register_class(UCLUPT_PT_main_panel)
 
 def unregister():
     bpy.utils.unregister_class(NODE_UL_YSculpt_layers)
+    bpy.utils.unregister_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.unregister_class(UCLUPT_PT_main_panel)

@@ -68,6 +68,14 @@ def new_node(tree, entity, prop, node_id_name, label=''):
 
     return node
 
+def remove_tree_inside_tree(tree):
+    for node in tree.nodes:
+        if node.type == 'GROUP':
+            if node.node_tree and node.node_tree.users == 1:
+                remove_tree_inside_tree(node.node_tree)
+                bpy.data.node_groups.remove(node.node_tree)
+            else: node.node_tree = None
+
 def remove_node(tree, entity, prop, remove_data=True):
     if not hasattr(entity, prop): return
     if not tree: return

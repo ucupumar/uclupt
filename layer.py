@@ -176,6 +176,28 @@ class YSRemoveLayer(bpy.types.Operator):
 def update_layer_name(self, context):
     pass
 
+def update_layer_use_mapping(self, context):
+    layer = self
+    tree = layer.id_data
+    ys = tree.ys
+    
+    layer_tree = get_layer_tree(layer)
+    mapping = layer_tree.nodes.get(layer.mapping)
+    mapping_scale = layer_tree.nodes.get(layer.mapping_scale)
+
+    if layer.use_mapping:
+        if not mapping:
+            mapping = new_node(layer_tree, layer, 'mapping', 'GeometryNodeGroup', 'Mapping') 
+            mapping.node_tree = get_mapping_geo_tree()
+            mapping_scale = new_node(layer_tree, layer, 'mapping_scale', 'ShaderNodeVectorMath', 'Mapping Scale') 
+            mapping_scale.operation = 'DIVIDE'
+    else:
+        remove_node(layer_tree, layer, 'mapping')
+        remove_node(layer_tree, layer, 'mapping_scale')
+
+    rearrange_layer_nodes(layer, layer_tree)
+    reconnect_layer_nodes(layer, layer_tree)
+
 def update_layer_enable(self, context):
     layer = self
     tree = layer.id_data
@@ -190,19 +212,20 @@ class YSLayer(bpy.types.PropertyGroup):
 
     enable : BoolProperty(
             name = 'Enable Layer', description = 'Enable layer',
-            default=True, update=update_layer_enable)
+            default=True, update=update_layer_enable
+            )
 
-    group_node : StringProperty(default='')
-
-    max_value : FloatProperty(
-            name = 'Max Value',
-            description = 'Max component value of vector displacement',
-            default = 1.0
+    use_mapping : BoolProperty(
+            name = 'Enable Mapping', description = 'Enable UV Mapping',
+            default=False, update=update_layer_use_mapping
             )
 
     # Nodes
+    group_node : StringProperty(default='')
     source : StringProperty(default='')
     uv_map : StringProperty(default='')
+    mapping : StringProperty(default='')
+    mapping_scale : StringProperty(default='')
     tangent : StringProperty(default='')
     bitangent : StringProperty(default='')
     tangent2world : StringProperty(default='')

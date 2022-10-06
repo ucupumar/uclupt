@@ -18,6 +18,8 @@ def reconnect_layer_nodes(layer, tree=None):
     blend = nodes.get(layer.blend)
 
     source = nodes.get(layer.source)
+    mapping = nodes.get(layer.mapping)
+    mapping_scale = nodes.get(layer.mapping_scale)
     uv_map = nodes.get(layer.uv_map)
     tangent = nodes.get(layer.tangent)
     bitangent = nodes.get(layer.bitangent)
@@ -27,11 +29,18 @@ def reconnect_layer_nodes(layer, tree=None):
     offset = source.outputs[0]
 
     # Source connection
-    create_link(tree, uv_map.outputs['Attribute'], source.inputs['Vector'])
-    create_link(tree, uv_map.outputs['Attribute'], tangent.inputs['Vector'])
-    create_link(tree, uv_map.outputs['Attribute'], bitangent.inputs['Vector'])
+    vec = pure_vec = uv_map.outputs[0]
+    if mapping: vec = create_link(tree, uv_map.outputs[0], mapping.inputs[0])[0]
+    create_link(tree, vec, source.inputs['Vector'])
+    create_link(tree, pure_vec, tangent.inputs['Vector'])
+    create_link(tree, pure_vec, bitangent.inputs['Vector'])
     create_link(tree, tangent.outputs[0], tangent2world.inputs['Tangent'])
     create_link(tree, bitangent.outputs[0], tangent2world.inputs['Bitangent'])
+
+    if mapping and mapping_scale:
+        offset = create_link(tree, offset, mapping_scale.inputs[0])[0]
+        create_link(tree, mapping.outputs[1], mapping_scale.inputs[1])
+
     offset = create_link(tree, offset, tangent2world.inputs['Vector'])[0]
 
     create_link(tree, prev_offset, blend.inputs[1])

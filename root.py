@@ -17,6 +17,15 @@ class YCreateYScluptNode(bpy.types.Operator):
             min=1, max=6,
             default = 2)
 
+    subdivision_type : EnumProperty(
+            name= 'Subdvidision Type',
+            description = 'Subdivision type',
+            items = (('CATMULL_CLARK', 'Catmull-Clark', ''),
+                     ('SIMPLE', 'Simple', ''),
+                     ),
+            default = 'CATMULL_CLARK'
+            )
+
     @classmethod
     def poll(cls, context):
         return context.object and context.object.type == 'MESH'
@@ -32,9 +41,11 @@ class YCreateYScluptNode(bpy.types.Operator):
 
         col = row.column()
         col.label(text='Levels:')
+        col.label(text='Type:')
 
         col = row.column()
         col.prop(self, 'levels', text='')
+        col.prop(self, 'subdivision_type', text='')
 
     def execute(self, context):
         obj = context.object
@@ -47,6 +58,7 @@ class YCreateYScluptNode(bpy.types.Operator):
             subsurf = obj.modifiers[-1]
         subsurf.levels = self.levels
         subsurf.render_levels = self.levels
+        subsurf.subdivision_type = self.subdivision_type
 
         # Get geonode
         geomod = [m for m in obj.modifiers if m.type == 'NODES' and m.node_group.ys.is_ysculpt_node]
@@ -185,7 +197,7 @@ class YSSubdivide(bpy.types.Operator):
 
         if multires:
             if multires.total_levels < ys.max_levels:
-                bpy.ops.object.multires_subdivide(modifier=multires.name, mode='CATMULL_CLARK')
+                bpy.ops.object.multires_subdivide(modifier=multires.name, mode=subsurf.subdivision_type)
 
         ys.levels = ys.max_levels
 

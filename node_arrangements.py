@@ -26,6 +26,9 @@ def rearrange_layer_nodes(layer, tree=None):
     check_set_node_loc(tree, layer.tangent2world, loc)
     loc.y -= 175
 
+    if check_set_node_loc(tree, layer.mapping_scale, loc):
+        loc.y -= 160
+
     check_set_node_loc(tree, layer.source, loc)
     loc.y -= 220
 
@@ -34,6 +37,9 @@ def rearrange_layer_nodes(layer, tree=None):
 
     check_set_node_loc(tree, layer.bitangent, loc)
     loc.y -= 220
+
+    if check_set_node_loc(tree, layer.mapping, loc):
+        loc.y -= 240
 
     check_set_node_loc(tree, layer.uv_map, loc)
     loc.y -= 130

@@ -4,11 +4,12 @@ from mathutils import *
 from .node_connections import *
 
 GEO_TANGENT2WORLD = '~ySL GEO Tangent2World'
+GEO_BLEND = '~ySL GEO Blend'
+GEO_MAPPING = '~ySL GEO Mapping'
 SHA_WORLD2TANGENT = '~ySL SHA World2Tangent'
 SHA_OBJECT2TANGENT = '~ySL SHA Object2Tangent'
 SHA_BITANGENT_CALC = '~ySL SHA Bitangent Calculation'
 SHA_PACK_VECTOR = '~ySL SHA Pack Vector'
-GEO_BLEND = '~ySL GEO Blend'
 MAT_OFFSET_TANGENT_SPACE = '~ySL MAT Tangent Space Offset'
 MAT_TANGENT_BAKE = '~ySL MAT Tangent Bake'
 MAT_BITANGENT_BAKE = '~ySL MAT Bitangent Bake'
@@ -328,6 +329,79 @@ def get_blend_geo_tree():
         links.new(multiply.outputs[0], add.inputs[1])
         links.new(start.outputs[1], add.inputs[0])
         links.new(add.outputs[0], end.inputs[0])
+
+    return tree
+
+def get_mapping_geo_tree():
+    tree = bpy.data.node_groups.get(GEO_MAPPING)
+    if not tree:
+        tree = bpy.data.node_groups.new(GEO_MAPPING, 'GeometryNodeTree')
+        nodes = tree.nodes
+        links = tree.links
+
+        create_essential_nodes(tree)
+        start = nodes.get(TREE_START)
+        end = nodes.get(TREE_END)
+
+        # Create IO
+        create_input(tree, 'Vector', 'NodeSocketVector')
+        inp = create_input(tree, 'Translate X', 'NodeSocketFloat')
+        inp.default_value = 0.0
+        inp = create_input(tree, 'Translate Y', 'NodeSocketFloat')
+        inp.default_value = 0.0
+        inp = create_input(tree, 'Rotation Angle', 'NodeSocketFloatAngle')
+        inp.default_value = 0.0
+        inp = create_input(tree, 'Scale', 'NodeSocketVector')
+        inp.default_value = (1.0, 1.0, 1.0)
+        create_output(tree, 'Vector', 'NodeSocketVector')
+        create_output(tree, 'Scale Vector', 'NodeSocketVector')
+
+        # Create nodes
+        combine_translate = nodes.new('ShaderNodeCombineXYZ')
+        translate = nodes.new('ShaderNodeVectorMath')
+        translate.operation = 'ADD'
+        rotate = nodes.new('ShaderNodeVectorRotate')
+        rotate.inputs['Center'].default_value = (0.5, 0.5, 0.0)
+        rotate.inputs['Axis'].default_value = (0.0, 0.0, 1.0)
+        scale = nodes.new('ShaderNodeVectorMath')
+        scale.operation = 'MULTIPLY'
+
+        # Node Arrangements
+        loc = Vector((0, 0))
+
+        start.location = loc
+        loc.x += 200
+
+        combine_translate.location = loc
+        loc.x += 200
+
+        rotate.location = loc
+        loc.x += 200
+
+        scale.location = loc
+        loc.x += 200
+
+        translate.location = loc
+        loc.x += 200
+
+        end.location = loc
+
+        # Node connection
+        links.new(start.outputs['Translate X'], combine_translate.inputs[0])
+        links.new(start.outputs['Translate Y'], combine_translate.inputs[1])
+
+        vec = start.outputs['Vector']
+
+        vec = create_link(tree, vec, rotate.inputs[0])[0]
+        vec = create_link(tree, vec, scale.inputs[0])[0]
+        vec = create_link(tree, vec, translate.inputs[0])[0]
+
+        links.new(start.outputs['Rotation Angle'], rotate.inputs['Angle'])
+        links.new(start.outputs['Scale'], scale.inputs[1])
+        links.new(combine_translate.outputs[0], translate.inputs[1])
+
+        links.new(vec, end.inputs[0])
+        links.new(start.outputs['Scale'], end.inputs[1])
 
     return tree
 
@@ -768,7 +842,8 @@ class YSDebugLib(bpy.types.Operator):
         #tree = get_tangent_bake_mat()
         #tree = get_object2tangent_shader_tree()
         #tree = get_bitangent_bake_mat()
-        tree = get_blend_geo_tree()
+        #tree = get_blend_geo_tree()
+        tree = get_mapping_geo_tree()
         return {'FINISHED'}
 
 def register():
