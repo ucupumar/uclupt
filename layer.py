@@ -192,7 +192,7 @@ def update_layer_use_mapping(self, context):
 
         if not mapping_scale:
             mapping_scale = new_node(layer_tree, layer, 'mapping_scale', 'ShaderNodeVectorMath', 'Mapping Scale') 
-            mapping_scale.operation = 'DIVIDE'
+            mapping_scale.operation = 'MULTIPLY'
     else:
         #remove_node(layer_tree, layer, 'mapping')
         remove_node(layer_tree, layer, 'mapping_scale')

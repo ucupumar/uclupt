@@ -364,7 +364,7 @@ def get_mapping_geo_tree():
         # Create nodes
         #combine_translate = nodes.new('ShaderNodeCombineXYZ')
         translate = nodes.new('ShaderNodeVectorMath')
-        translate.operation = 'ADD'
+        translate.operation = 'SUBTRACT'
 
         rotate = nodes.new('ShaderNodeVectorRotate')
         rotate.inputs['Center'].default_value = (0.5, 0.5, 0.0)
@@ -375,7 +375,7 @@ def get_mapping_geo_tree():
         scale = nodes.new('ShaderNodeVectorMath')
         scale_offset_1 = nodes.new('ShaderNodeVectorMath')
         scale_offset_1.operation = 'ADD'
-        scale.operation = 'MULTIPLY'
+        scale.operation = 'DIVIDE'
 
         # Node Arrangements
         loc = Vector((0, 0))
