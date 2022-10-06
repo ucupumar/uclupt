@@ -216,8 +216,9 @@ class YSDeleteHigherSubdivision(bpy.types.Operator):
     def execute(self, context):
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys
-        multires = get_active_multires_modifier()
-        geo, subsurf = get_active_ysculpt_modifiers()
+        obj = context.object
+        multires = get_multires_modifier(obj)
+        geo, subsurf = get_ysculpt_modifiers(obj)
 
         if ys.max_levels == 1:
             self.report({'ERROR'}, "Minimum subdvision level is already reached!")

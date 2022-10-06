@@ -353,6 +353,9 @@ def get_mapping_geo_tree():
         inp.default_value = 0.0
         inp = create_input(tree, 'Scale', 'NodeSocketVector')
         inp.default_value = (1.0, 1.0, 1.0)
+        inp = create_input(tree, 'Center', 'NodeSocketVector')
+        inp.default_value = (0.5, 0.5, 0.0)
+
         create_output(tree, 'Vector', 'NodeSocketVector')
         create_output(tree, 'Scale Vector', 'NodeSocketVector')
 
@@ -360,10 +363,18 @@ def get_mapping_geo_tree():
         combine_translate = nodes.new('ShaderNodeCombineXYZ')
         translate = nodes.new('ShaderNodeVectorMath')
         translate.operation = 'ADD'
+        #center_offset = nodes.new('ShaderNodeVectorMath')
+        #center_offset.operation = 'SUBTRACT'
+
         rotate = nodes.new('ShaderNodeVectorRotate')
         rotate.inputs['Center'].default_value = (0.5, 0.5, 0.0)
         rotate.inputs['Axis'].default_value = (0.0, 0.0, 1.0)
+
+        scale_offset_0 = nodes.new('ShaderNodeVectorMath')
+        scale_offset_0.operation = 'SUBTRACT'
         scale = nodes.new('ShaderNodeVectorMath')
+        scale_offset_1 = nodes.new('ShaderNodeVectorMath')
+        scale_offset_1.operation = 'ADD'
         scale.operation = 'MULTIPLY'
 
         # Node Arrangements
@@ -373,15 +384,29 @@ def get_mapping_geo_tree():
         loc.x += 200
 
         combine_translate.location = loc
-        loc.x += 200
+        #loc.x += 200
+        loc.y -= 200
+
+        translate.location = loc
+        loc.y -= 200
+
+        #center_offset.location = loc
+        #loc.y = 0
+        #loc.x += 200
 
         rotate.location = loc
         loc.x += 200
 
-        scale.location = loc
-        loc.x += 200
+        scale_offset_0.location = loc
+        #loc.x += 200
+        loc.y -= 200
 
-        translate.location = loc
+        scale.location = loc
+        loc.y -= 200
+        #loc.x += 200
+
+        scale_offset_1.location = loc
+        loc.y = 0
         loc.x += 200
 
         end.location = loc
@@ -392,13 +417,22 @@ def get_mapping_geo_tree():
 
         vec = start.outputs['Vector']
 
-        vec = create_link(tree, vec, rotate.inputs[0])[0]
-        vec = create_link(tree, vec, scale.inputs[0])[0]
         vec = create_link(tree, vec, translate.inputs[0])[0]
+        vec = create_link(tree, vec, rotate.inputs[0])[0]
+        vec = create_link(tree, vec, scale_offset_0.inputs[0])[0]
+        vec = create_link(tree, vec, scale.inputs[0])[0]
+        vec = create_link(tree, vec, scale_offset_1.inputs[0])[0]
 
-        links.new(start.outputs['Rotation Angle'], rotate.inputs['Angle'])
-        links.new(start.outputs['Scale'], scale.inputs[1])
+        center = start.outputs['Center']
+        #center = create_link(tree, center, center_offset.inputs[0])[0]
+
         links.new(combine_translate.outputs[0], translate.inputs[1])
+        #links.new(combine_translate.outputs[0], center_offset.inputs[1])
+        links.new(start.outputs['Rotation Angle'], rotate.inputs['Angle'])
+        links.new(center, rotate.inputs['Center'])
+        links.new(center, scale_offset_0.inputs[1])
+        links.new(start.outputs['Scale'], scale.inputs[1])
+        links.new(center, scale_offset_1.inputs[1])
 
         links.new(vec, end.inputs[0])
         links.new(start.outputs['Scale'], end.inputs[1])
