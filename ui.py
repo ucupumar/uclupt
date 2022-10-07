@@ -46,6 +46,10 @@ class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
         split.label(text='Center:')
         split.prop(mapping.inputs[4], 'default_value', text='')
 
+        split = col.split(factor=0.33)
+        split.label(text='Thickness:')
+        split.prop(mapping.inputs[5], 'default_value', text='')
+
 class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
     bl_label = "Subdivion Properties"
     bl_description = "Subdivision Properties"
