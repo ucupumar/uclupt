@@ -33,7 +33,7 @@ def rearrange_layer_nodes(layer, tree=None):
     loc.y -= 220
 
     if check_set_node_loc(tree, layer.mapping, loc):
-        loc.y -= 420
+        loc.y -= 470
 
     check_set_node_loc(tree, layer.uv_map, loc)
     loc.y -= 130

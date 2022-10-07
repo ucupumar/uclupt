@@ -14,6 +14,91 @@ MAT_OFFSET_TANGENT_SPACE = '~ySL MAT Tangent Space Offset'
 MAT_TANGENT_BAKE = '~ySL MAT Tangent Bake'
 MAT_BITANGENT_BAKE = '~ySL MAT Bitangent Bake'
 
+INFO_PREFIX = '__ys_info_'
+
+def create_info_nodes(tree):
+    ys = tree.ys if hasattr(tree, 'ys') else None
+    nodes = tree.nodes
+
+    if ys and ys.is_ysculpt_node:
+        tree_type = 'ROOT'
+    elif ys and ys.is_ysculpt_layer_node:
+        tree_type = 'LAYER'
+    else: tree_type = 'LIB'
+
+    # Delete previous info nodes
+    #for node in nodes:
+    #    if node.name.startswith(INFO_PREFIX):
+    #        nodes.remove(node)
+
+    # Create info nodes
+    infos = []
+
+    info = nodes.new('NodeFrame')
+
+    if tree_type == 'LAYER':
+        info.label = 'Part of ' + get_addon_title() + ' addon'
+        info.width = 270.0
+    elif tree_type == 'ROOT':
+        info.label = 'Created using ' + get_addon_title() + ' addon' + (' version ' + ys.version) if ys else ''
+        info.width = 460.0
+    else:
+        info.label = 'Part of ' + get_addon_title() + ' addon'
+        info.width = 250.0
+
+    info.use_custom_color = True
+    info.color = (0.5, 0.5, 0.5)
+    info.height = 30.0
+    infos.append(info)
+
+    info = nodes.new('NodeFrame')
+    info.label = 'Get the addon from github.com/ucupumar/uclupt'
+    info.use_custom_color = True
+    info.color = (0.5, 0.5, 0.5)
+    info.width = 530.0
+    info.height = 30.0
+    infos.append(info)
+
+    info = nodes.new('NodeFrame')
+    info.label = 'WARNING: Do NOT edit this group manually!'
+    info.use_custom_color = True
+    info.color = (1.0, 0.5, 0.5)
+    info.width = 480.0
+    info.height = 30.0
+    infos.append(info)
+
+    info = nodes.new('NodeFrame')
+    info.label = 'Please use this panel: 3D Viewport > Properties > ' + get_addon_title()
+    #info.label = 'Please use this panel: Node Editor > Tools > Misc'
+    info.use_custom_color = True
+    info.color = (1.0, 0.5, 0.5)
+    info.width = 590.0
+    info.height = 30.0
+    infos.append(info)
+
+    if tree_type in {'LAYER', 'ROOT'}:
+
+        loc = Vector((0, 70))
+
+        for info in reversed(infos):
+            info.name = INFO_PREFIX + info.name
+
+            loc.y += 40
+            info.location = loc
+    else:
+
+        # Get group input node
+        try: 
+            inp = [n for n in nodes if n.type == 'GROUP_INPUT'][0]
+            loc = Vector((inp.location[0] - 620, inp.location[1]))
+        except: loc = Vector((-620, 0))
+
+        for info in infos:
+            info.name = INFO_PREFIX + info.name
+
+            loc.y -= 40
+            info.location = loc
+
 def get_tangent2object_geo_tree():
 
     tree = bpy.data.node_groups.get(GEO_TANGENT2OBJECT)
@@ -128,6 +213,9 @@ def get_tangent2object_geo_tree():
 
         links.new(finalvec.outputs[0], end.inputs[0])
 
+        # Info nodes
+        create_info_nodes(tree)
+
     return tree
 
 def get_world2tangent_shader_tree():
@@ -200,6 +288,9 @@ def get_world2tangent_shader_tree():
         links.new(dotnormal.outputs['Value'], finalvec.inputs[2])
 
         links.new(finalvec.outputs[0], end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     return tree
 
@@ -281,6 +372,9 @@ def get_object2tangent_shader_tree():
 
         links.new(finalvec.outputs[0], end.inputs[0])
 
+        # Info nodes
+        create_info_nodes(tree)
+
     return tree
 
 def get_blend_geo_tree():
@@ -329,6 +423,9 @@ def get_blend_geo_tree():
         links.new(multiply.outputs[0], add.inputs[1])
         links.new(start.outputs[1], add.inputs[0])
         links.new(add.outputs[0], end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     return tree
 
@@ -460,6 +557,9 @@ def get_mapping_geo_tree():
         links.new(start.outputs['Scale'], end.inputs[1])
         links.new(start.outputs['Rotation Angle'], end.inputs[2])
 
+        # Info nodes
+        create_info_nodes(tree)
+
     return tree
 
 def get_pack_vector_shader_tree():
@@ -514,6 +614,9 @@ def get_pack_vector_shader_tree():
         vec = create_link(tree, vec, multiply.inputs[0])[0]
         vec = create_link(tree, vec, add.inputs[0])[0]
         create_link(tree, vec, end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     return tree
 
@@ -605,6 +708,9 @@ def get_bitangent_calc_shader_tree():
 
         links.new(final_mul.outputs[0], end.inputs[0])
 
+        # Info nodes
+        create_info_nodes(tree)
+
     return tree
 
 def get_tangent_bake_mat(uv_name='', target_image=None):
@@ -664,6 +770,9 @@ def get_tangent_bake_mat(uv_name='', target_image=None):
         links.new(tangent.outputs[0], transform.inputs[0])
         links.new(transform.outputs[0], emission.inputs[0])
         links.new(emission.outputs[0], end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     bake_target = mat.node_tree.nodes.get('Bake Target')
     bake_target.image = target_image
@@ -752,6 +861,9 @@ def get_bitangent_bake_mat(uv_name='', target_image=None):
         links.new(bsign.outputs['Fac'], bcalc.inputs['Bitangent Sign'])
         links.new(bcalc.outputs[0], emission.inputs[0])
         links.new(emission.outputs[0], end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     bake_target = mat.node_tree.nodes.get('Bake Target')
     bake_target.image = target_image
@@ -866,6 +978,9 @@ def get_offset_bake_mat(uv_name='', target_image=None, bitangent_image=None):
         links.new(object2tangent.outputs['Vector'], pack_vector.inputs['Vector'])
         links.new(pack_vector.outputs['Vector'], emission.inputs[0])
         links.new(emission.outputs[0], end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
 
     tangent = mat.node_tree.nodes.get('Tangent')
     tangent.uv_map = uv_name

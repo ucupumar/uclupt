@@ -123,6 +123,10 @@ class YSNewLayer(bpy.types.Operator):
         rearrange_ys_nodes(ys_tree)
         reconnect_ys_nodes(ys_tree)
 
+        # Create info nodes
+        create_info_nodes(layer_tree)
+
+        # Set image to image editor
         set_image_to_first_editor(image)
 
         return {'FINISHED'}

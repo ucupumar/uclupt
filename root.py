@@ -1,6 +1,7 @@
 import bpy
 from bpy.props import *
 from .common import *
+from .lib import *
 from .node_arrangements import *
 from .node_connections import *
 from . import layer
@@ -103,6 +104,8 @@ class YCreateYScluptNode(bpy.types.Operator):
             #uv_map.data_type = 'FLOAT_VECTOR'
             #tangent = new_node(tree, ys, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
             #bitangent = new_node(tree, ys, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
+
+            create_info_nodes(tree)
 
             # Set levels
             ys.max_levels = self.levels
