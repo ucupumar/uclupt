@@ -325,6 +325,35 @@ def bake_multires_to_layer(obj, layer):
     # Set image to editor
     set_image_to_first_editor(image)
 
+class YSBakeTangent(bpy.types.Operator):
+    bl_idname = "mesh.ys_bake_tangent"
+    bl_label = "Bake Tangent and Bitangent"
+    bl_description = "Bake tangent and bitangent of mesh. Recomendeed after you edit the mesh"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def execute(self, context):
+        obj = context.object
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
+        # Check all uvs used by ys
+        uv_names = []
+        for layer in ys.layers:
+            layer_tree = get_layer_tree(layer)
+            uv_map = layer_tree.nodes.get(layer.uv_map)
+            uv_name = uv_map.inputs[0].default_value
+            if uv_name != '' and uv_name not in uv_names:
+                uv_names.append(uv_name)
+
+        for uv_name in uv_names:
+            bake_tangent(obj, uv_name)
+
+        return {'FINISHED'}
+
 class YSApplySculptToLayer(bpy.types.Operator):
     bl_idname = "mesh.y_apply_sculpt_to_vdm_layer"
     bl_label = "Apply Sculpt to Layer"
@@ -585,10 +614,12 @@ class YSSculptLayer(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(YSApplySculptToLayer)
+    bpy.utils.register_class(YSBakeTangent)
     bpy.utils.register_class(YSSculptLayer)
     bpy.utils.register_class(YSCancelSculpt)
 
 def unregister():
     bpy.utils.unregister_class(YSApplySculptToLayer)
+    bpy.utils.unregister_class(YSBakeTangent)
     bpy.utils.unregister_class(YSSculptLayer)
     bpy.utils.unregister_class(YSCancelSculpt)

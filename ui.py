@@ -76,6 +76,9 @@ class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
             title = 'Catmull-Clark' if subsurf.subdivision_type == 'CATMULL_CLARK' else 'Simple'
             col.label(text=title)
 
+        col = self.layout.column()
+        col.operator('mesh.ys_bake_tangent', text='Bake Tangent', icon='RESTRICT_RENDER_OFF')
+
 class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
     #bl_idname = "OBJECT_PT_YS_layer_properties"
     bl_label = "Layer Properties"
