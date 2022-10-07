@@ -372,3 +372,10 @@ def get_unique_name(name, items, surname = ''):
             i += 1
 
     return unique_name
+
+def set_image_to_first_editor(image):
+    space = get_first_unpinned_image_editor_space(bpy.context)
+    if space: 
+        space.image = image
+        # Hack for Blender 2.8 which keep pinning image automatically
+        space.use_image_pin = False

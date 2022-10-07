@@ -123,6 +123,8 @@ class YSNewLayer(bpy.types.Operator):
         rearrange_ys_nodes(ys_tree)
         reconnect_ys_nodes(ys_tree)
 
+        set_image_to_first_editor(image)
+
         return {'FINISHED'}
 
 class YSRemoveLayer(bpy.types.Operator):

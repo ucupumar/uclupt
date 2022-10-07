@@ -203,7 +203,6 @@ def bake_tangent(obj, uv_name=''):
 
 def bake_multires_to_layer(obj, layer): 
 
-
     context = bpy.context
     scene = context.scene
 
@@ -322,6 +321,9 @@ def bake_multires_to_layer(obj, layer):
     # Set back object to active
     context.view_layer.objects.active = obj
     obj.select_set(True)
+
+    # Set image to editor
+    set_image_to_first_editor(image)
 
 class YSApplySculptToLayer(bpy.types.Operator):
     bl_idname = "mesh.y_apply_sculpt_to_vdm_layer"

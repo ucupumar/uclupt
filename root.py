@@ -241,11 +241,7 @@ def update_layer_index(self, context):
 
     image = get_layer_image(layer)
 
-    space = get_first_unpinned_image_editor_space(context)
-    if space: 
-        space.image = image
-        # Hack for Blender 2.8 which keep pinning image automatically
-        space.use_image_pin = False
+    set_image_to_first_editor(image)
 
 def update_levels(self, context):
     geo, subsurf = get_active_ysculpt_modifiers()
