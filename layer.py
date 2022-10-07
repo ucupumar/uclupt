@@ -111,8 +111,8 @@ class YSNewLayer(bpy.types.Operator):
         blend = new_node(layer_tree, layer, 'blend', 'GeometryNodeGroup', 'Blend') 
         blend.node_tree = get_blend_geo_tree()
 
-        tangent2world = new_node(layer_tree, layer, 'tangent2world', 'GeometryNodeGroup', 'Tangent to World') 
-        tangent2world.node_tree = get_tangent2world_geom_tree()
+        tangent2world = new_node(layer_tree, layer, 'tangent2world', 'GeometryNodeGroup', 'Tangent to Object') 
+        tangent2world.node_tree = get_tangent2object_geo_tree()
 
         # Create image data
         image = bpy.data.images.new(name=layer.name, 

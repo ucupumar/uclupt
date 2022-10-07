@@ -3,7 +3,7 @@ from .common import *
 from mathutils import *
 from .node_connections import *
 
-GEO_TANGENT2WORLD = '~ySL GEO Tangent2World'
+GEO_TANGENT2OBJECT = '~ySL GEO Tangent2Object'
 GEO_BLEND = '~ySL GEO Blend'
 GEO_MAPPING = '~ySL GEO Mapping'
 SHA_WORLD2TANGENT = '~ySL SHA World2Tangent'
@@ -14,11 +14,11 @@ MAT_OFFSET_TANGENT_SPACE = '~ySL MAT Tangent Space Offset'
 MAT_TANGENT_BAKE = '~ySL MAT Tangent Bake'
 MAT_BITANGENT_BAKE = '~ySL MAT Bitangent Bake'
 
-def get_tangent2world_geom_tree():
+def get_tangent2object_geo_tree():
 
-    tree = bpy.data.node_groups.get(GEO_TANGENT2WORLD)
+    tree = bpy.data.node_groups.get(GEO_TANGENT2OBJECT)
     if not tree:
-        tree = bpy.data.node_groups.new(GEO_TANGENT2WORLD, 'GeometryNodeTree')
+        tree = bpy.data.node_groups.new(GEO_TANGENT2OBJECT, 'GeometryNodeTree')
         nodes = tree.nodes
         links = tree.links
 
