@@ -14,6 +14,7 @@ if "bpy" in locals():
     imp.reload(common)
     imp.reload(bake_common)
     imp.reload(lib)
+    imp.reload(image_ops)
     imp.reload(node_arrangements)
     imp.reload(node_connections)
     imp.reload(disp)
@@ -21,12 +22,13 @@ if "bpy" in locals():
     imp.reload(root)
     imp.reload(ui)
 else:
-    from . import common, bake_common, lib, node_arrangements, node_connections, disp, layer, root, ui
+    from . import common, bake_common, lib, image_ops, node_arrangements, node_connections, disp, layer, root, ui
 
 import bpy 
 
 def register():
     lib.register()
+    image_ops.register()
     disp.register()
     layer.register()
     root.register()
@@ -34,6 +36,7 @@ def register():
 
 def unregister():
     lib.unregister()
+    image_ops.unregister()
     disp.unregister()
     layer.unregister()
     root.unregister()

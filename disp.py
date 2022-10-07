@@ -303,7 +303,7 @@ def bake_multires_to_layer(obj, layer):
     bpy.ops.object.bake()
 
     # Pack image
-    image.pack()
+    #image.pack()
 
     # Recover bake settings
     recover_bake_settings(book, True)
