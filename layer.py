@@ -4,6 +4,52 @@ from .node_arrangements import *
 from .node_connections import *
 from .lib import *
 from .common import *
+from .bake_common import *
+
+def add_new_layer(tree, layer_name, image, uv_name):
+    ys = tree.ys
+
+    # Add new layer
+    layer = ys.layers.add()
+    layer.name = layer_name
+
+    ys.active_layer_index = len(ys.layers) - 1
+    
+    # Create the nodes
+    layer_tree = bpy.data.node_groups.new(LAYER_GROUP_PREFIX + layer.name, 'GeometryNodeTree')
+    layer_tree.ys.is_ysculpt_layer_node = True
+    layer_node = tree.nodes.new('GeometryNodeGroup')
+    layer_node.node_tree = layer_tree
+    layer.group_node = layer_node.name
+
+    # Create IO
+    create_input(layer_tree, 'Offset', 'NodeSocketVector')
+    create_output(layer_tree, 'Offset', 'NodeSocketVector')
+
+    # Create nodes
+    create_essential_nodes(layer_tree)
+
+    uv_map = new_node(layer_tree, layer, 'uv_map', 'GeometryNodeInputNamedAttribute', 'UV Map') 
+    uv_map.data_type = 'FLOAT_VECTOR'
+    uv_map.inputs[0].default_value = uv_name
+
+    source = new_node(layer_tree, layer, 'source', 'GeometryNodeImageTexture', 'Source') 
+    tangent = new_node(layer_tree, layer, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
+    bitangent = new_node(layer_tree, layer, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
+
+    blend = new_node(layer_tree, layer, 'blend', 'GeometryNodeGroup', 'Blend') 
+    blend.node_tree = get_blend_geo_tree()
+
+    tangent2world = new_node(layer_tree, layer, 'tangent2world', 'GeometryNodeGroup', 'Tangent to Object') 
+    tangent2world.node_tree = get_tangent2object_geo_tree()
+
+    source.inputs[0].default_value = image
+
+    rearrange_ys_nodes(tree)
+    reconnect_ys_nodes(tree)
+
+    # Create info nodes
+    create_info_nodes(layer_tree)
 
 class YSNewLayer(bpy.types.Operator):
     bl_idname = "node.y_new_ysculpt_layer"
@@ -70,61 +116,98 @@ class YSNewLayer(bpy.types.Operator):
         obj = context.object
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys
-        
-        layer = ys.layers.add()
-        #layer.name = 'Layer ' + str(len(ys.layers) - 1)
-        layer.name = get_unique_name(self.name, bpy.data.images)
 
-        ys.active_layer_index = len(ys.layers) - 1
-        
-        # Create the nodes
-        # BUG: New node with default io should be created using blender ops
-        #bpy.ops.object.modifier_add(type='NODES')
-        #tempmod = obj.modifiers[-1]
-        #bpy.ops.node.new_geometry_node_group_assign()
-        #layer_tree = tempmod.node_group
-        #bpy.ops.object.modifier_remove(modifier=tempmod.name)
-
-        layer_tree = bpy.data.node_groups.new(LAYER_GROUP_PREFIX + layer.name, 'GeometryNodeTree')
-        layer_tree.ys.is_ysculpt_layer_node = True
-        layer_node = ys_tree.nodes.new('GeometryNodeGroup')
-        layer_node.node_tree = layer_tree
-        layer.group_node = layer_node.name
-
-        # Create IO
-        create_input(layer_tree, 'Offset', 'NodeSocketVector')
-        create_output(layer_tree, 'Offset', 'NodeSocketVector')
-
-        # Create nodes
-        create_essential_nodes(layer_tree)
-
-        uv_map = new_node(layer_tree, layer, 'uv_map', 'GeometryNodeInputNamedAttribute', 'UV Map') 
-        uv_map.data_type = 'FLOAT_VECTOR'
-        uv_map.inputs[0].default_value = self.uv_map
-
-        source = new_node(layer_tree, layer, 'source', 'GeometryNodeImageTexture', 'Source') 
-        tangent = new_node(layer_tree, layer, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
-        bitangent = new_node(layer_tree, layer, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
-        #blend = new_node(layer_tree, layer, 'blend', 'ShaderNodeMixRGB', 'Blend') 
-        #blend.inputs[0].default_value = 1.0
-        #blend.blend_type = 'ADD'
-        blend = new_node(layer_tree, layer, 'blend', 'GeometryNodeGroup', 'Blend') 
-        blend.node_tree = get_blend_geo_tree()
-
-        tangent2world = new_node(layer_tree, layer, 'tangent2world', 'GeometryNodeGroup', 'Tangent to Object') 
-        tangent2world.node_tree = get_tangent2object_geo_tree()
+        # Get layer name
+        layer_name = get_unique_name(self.name, bpy.data.images)
 
         # Create image data
-        image = bpy.data.images.new(name=layer.name, 
+        image = bpy.data.images.new(name=layer_name, 
                 width=self.width, height=self.height, alpha=False, float_buffer=True)
         image.generated_color = (0,0,0,1)
-        source.inputs[0].default_value = image
 
-        rearrange_ys_nodes(ys_tree)
-        reconnect_ys_nodes(ys_tree)
+        # Create new layer
+        add_new_layer(ys_tree, layer_name, image, self.uv_map)
 
-        # Create info nodes
-        create_info_nodes(layer_tree)
+        # Set image to image editor
+        set_image_to_first_editor(image)
+
+        return {'FINISHED'}
+
+class YSOpenAvailableImageAsLayer(bpy.types.Operator):
+    bl_idname = "node.ys_open_available_image_as_layer"
+    bl_label = "Open Available Image As Layer"
+    bl_description = "Open available image as " + get_addon_title() + " Layer"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    image_name : StringProperty(name="Image")
+    image_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
+    uv_map : StringProperty(default='')
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def invoke(self, context, event):
+        obj = context.object
+
+        # Update image names
+        self.image_coll.clear()
+        imgs = bpy.data.images
+        for img in imgs:
+            if hasattr(img, 'yia') and img.yia.is_image_atlas: continue
+            if img.name.endswith('_tangent') or img.name.endswith('_bitangent'): continue
+            if img.name == 'Render Result': continue
+            self.image_coll.add().name = img.name
+
+        # Set uv name
+        active_uv = obj.data.uv_layers.active
+        self.uv_map = active_uv.name
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV):
+                self.uv_map_coll.add().name = uv.name
+
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+
+        row = self.layout.split(factor=0.4)
+
+        col = row.column(align=False)
+        col.label(text='Image:')
+        col.label(text='UV Map:')
+
+        col = row.column(align=False)
+        col.prop_search(self, "image_name", self, "image_coll", text='', icon='IMAGE_DATA')
+        col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
+
+    def execute(self, context):
+
+        if self.image_name == '':
+            self.report({'ERROR'}, "No image selected!")
+            return {'CANCELLED'}
+        if self.uv_map == '':
+            self.report({'ERROR'}, "UVMap is cannot be empty!")
+            return {'CANCELLED'}
+
+        obj = context.object
+        ys_tree = get_active_ysculpt_tree()
+        image = bpy.data.images.get(self.image_name)
+
+        # Get tangent image
+        tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, self.uv_map, return_is_newly_created=True)
+        if is_newly_created_tangent:
+            bake_tangent(obj, self.uv_map)
+        
+        # Create new layer
+        add_new_layer(ys_tree, image.name, image, self.uv_map)
 
         # Set image to image editor
         set_image_to_first_editor(image)
@@ -251,10 +334,12 @@ class YSLayer(bpy.types.PropertyGroup):
 
 def register():
     bpy.utils.register_class(YSNewLayer)
+    bpy.utils.register_class(YSOpenAvailableImageAsLayer)
     bpy.utils.register_class(YSRemoveLayer)
     bpy.utils.register_class(YSLayer)
 
 def unregister():
     bpy.utils.unregister_class(YSNewLayer)
+    bpy.utils.unregister_class(YSOpenAvailableImageAsLayer)
     bpy.utils.unregister_class(YSRemoveLayer)
     bpy.utils.unregister_class(YSLayer)

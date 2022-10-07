@@ -106,6 +106,22 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
             split.label(text='Image Extension')
             split.prop(source, 'extension', text='')
 
+class YSNewLayerMenu(bpy.types.Menu):
+    bl_idname = "NODE_MT_ys_new_layer_menu"
+    bl_description = 'Add New Layer'
+    bl_label = "New Layer Menu"
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+    
+    def draw(self, context):
+        row = self.layout.row()
+        col = row.column()
+
+        col.operator("node.y_new_ysculpt_layer", text='New Layer', icon='IMAGE_DATA')
+        col.operator("node.ys_open_available_image_as_layer", text='Open Available Image as Layer')
+
 class UCLUPT_PT_main_panel(bpy.types.Panel):
     bl_label = "Uclupt"
     bl_space_type = "VIEW_3D"
@@ -197,7 +213,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                     "layers", ys, "active_layer_index", rows=3, maxrows=3)  
 
             rcol = row.column(align=True)
-            rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
+            #rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
+            rcol.menu("NODE_MT_ys_new_layer_menu", text='', icon='ADD')
             rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
         elif layer:
             row = col.row()
@@ -274,6 +291,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(NODE_UL_YSculpt_layers)
+    bpy.utils.register_class(YSNewLayerMenu)
     bpy.utils.register_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.register_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
@@ -281,6 +299,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(NODE_UL_YSculpt_layers)
+    bpy.utils.unregister_class(YSNewLayerMenu)
     bpy.utils.unregister_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)

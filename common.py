@@ -379,3 +379,4 @@ def set_image_to_first_editor(image):
         space.image = image
         # Hack for Blender 2.8 which keep pinning image automatically
         space.use_image_pin = False
+
