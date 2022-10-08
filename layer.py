@@ -366,12 +366,17 @@ class YSTransferUV(bpy.types.Operator):
 
     def execute(self, context):
 
+        obj = context.object
+        layer = self.layer
+
         if self.uv_map == '':
             self.report({'ERROR'}, "Target UV cannot be empty!")
             return {'CANCELLED'}
 
-        obj = context.object
-        layer = self.layer
+        if layer.use_mapping:
+            self.report({'ERROR'}, "Cannot transfer layer image with mapping enabled!")
+            return {'CANCELLED'}
+
         image = get_layer_image(layer)
 
         transfer_uv(obj, image, layer.uv_name, self.uv_map)
