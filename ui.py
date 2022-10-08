@@ -42,12 +42,12 @@ class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
         mapping = context.mapping
         col = self.layout.column()
         col.label(text='Mapping')
-        split = col.split(factor=0.33)
+        split = col.split(factor=0.4)
         split.label(text='Center:')
         split.prop(mapping.inputs[4], 'default_value', text='')
 
-        split = col.split(factor=0.33)
-        split.label(text='Thickness:')
+        split = col.split(factor=0.4)
+        split.label(text='Shrink/Fatten:')
         split.prop(mapping.inputs[5], 'default_value', text='')
 
 class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):

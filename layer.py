@@ -206,12 +206,14 @@ class YSOpenAvailableImageAsLayer(bpy.types.Operator):
 
         # Get tangent image
         tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, self.uv_map, return_is_newly_created=True)
-        if is_newly_created_tangent:
-            bake_tangent(obj, self.uv_map)
         
         # Create new layer
         add_new_layer(ys_tree, image.name, image, self.uv_map, 
                 tangent_image=tanimage, bitangent_image=bitimage)
+
+        # Bake tangent if it's new
+        if is_newly_created_tangent:
+            bake_tangent(obj, self.uv_map)
 
         # Set image to image editor
         set_image_to_first_editor(image)

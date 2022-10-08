@@ -457,7 +457,7 @@ def get_mapping_geo_tree():
         inp.default_value = (0.5, 0.5, 0.0)
         inp = create_input(tree, 'Thickness', 'NodeSocketFloat')
         inp.default_value = 1.0
-        inp.min_value = 0.001
+        inp.min_value = 0.0
 
         create_output(tree, 'Vector', 'NodeSocketVector')
         create_output(tree, 'Scale Vector', 'NodeSocketVector')
@@ -479,17 +479,8 @@ def get_mapping_geo_tree():
         scale_offset_1.operation = 'ADD'
         scale.operation = 'DIVIDE'
 
-        thickness_combine = nodes.new('ShaderNodeCombineXYZ')
-        thickness_combine.inputs[2].default_value = 1.0
         thickness_multiply = nodes.new('ShaderNodeVectorMath')
         thickness_multiply.operation = 'MULTIPLY'
-
-        #fix_scale_offset_0 = nodes.new('ShaderNodeVectorMath')
-        #fix_scale_offset_0.operation = 'SUBTRACT'
-        #fix_scale = nodes.new('ShaderNodeVectorMath')
-        #fix_scale_offset_1 = nodes.new('ShaderNodeVectorMath')
-        #fix_scale_offset_1.operation = 'ADD'
-        #fix_scale.operation = 'DIVIDE'
 
         # Node Arrangements
         loc = Vector((0, 0))
@@ -497,11 +488,7 @@ def get_mapping_geo_tree():
         start.location = loc
         loc.x += 200
 
-        thickness_combine.location = loc
-        loc.y -= 200
-
         thickness_multiply.location = loc
-        loc.y = 0
         loc.x += 200
 
         translate.location = loc
@@ -534,7 +521,6 @@ def get_mapping_geo_tree():
         vec = create_link(tree, vec, scale_offset_0.inputs[0])[0]
         vec = create_link(tree, vec, scale.inputs[0])[0]
         vec = create_link(tree, vec, scale_offset_1.inputs[0])[0]
-        #vec = create_link(tree, vec, thickness_multiply.inputs[0])[0]
 
         center = start.outputs['Center']
 
@@ -546,16 +532,14 @@ def get_mapping_geo_tree():
         links.new(center, scale_offset_1.inputs[1])
 
         sca = start.outputs['Scale']
-        sca = create_link(tree, sca, thickness_multiply.inputs[0])[0]
         sca = create_link(tree, sca, scale.inputs[1])[0]
 
-        #links.new(start.outputs['Scale'], scale.inputs[1])
-        links.new(start.outputs['Thickness'], thickness_combine.inputs[0])
-        links.new(start.outputs['Thickness'], thickness_combine.inputs[1])
-        links.new(thickness_combine.outputs[0], thickness_multiply.inputs[1])
+        links.new(start.outputs['Scale'], thickness_multiply.inputs[0])
+        links.new(start.outputs['Thickness'], thickness_multiply.inputs[1])
 
         links.new(vec, end.inputs[0])
-        links.new(start.outputs['Scale'], end.inputs[1])
+        #links.new(start.outputs['Scale'], end.inputs[1])
+        links.new(thickness_multiply.outputs[0], end.inputs[1])
         links.new(start.outputs['Rotation Angle'], end.inputs[2])
 
         # Info nodes

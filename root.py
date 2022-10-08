@@ -46,7 +46,8 @@ class YCreateYScluptNode(bpy.types.Operator):
 
         col = row.column()
         col.prop(self, 'levels', text='')
-        col.prop(self, 'subdivision_type', text='')
+        crow = col.row(align=True)
+        crow.prop(self, 'subdivision_type', expand=True)
 
     def execute(self, context):
         obj = context.object
