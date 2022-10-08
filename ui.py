@@ -214,12 +214,14 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
         if not multires:
             rcol = row.column()
             rcol.template_list("NODE_UL_YSculpt_layers", "", ys,
-                    "layers", ys, "active_layer_index", rows=3, maxrows=3)  
+                    "layers", ys, "active_layer_index", rows=4, maxrows=4)  
 
             rcol = row.column(align=True)
             #rcol.operator("node.y_new_ysculpt_layer", icon='ADD', text='')
             rcol.menu("NODE_MT_ys_new_layer_menu", text='', icon='ADD')
             rcol.operator("node.y_remove_ysculpt_layer", icon='REMOVE', text='')
+            rcol.operator("node.ys_move_layer", icon='TRIA_UP', text='').direction = 'UP'
+            rcol.operator("node.ys_move_layer", icon='TRIA_DOWN', text='').direction = 'DOWN'
         elif layer:
             row = col.row()
             row.label(text=image.name, icon='IMAGE_DATA')

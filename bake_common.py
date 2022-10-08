@@ -360,6 +360,7 @@ def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
     ys = ys_tree.ys
     for layer in ys.layers:
         layer_tree = get_layer_tree(layer)
+        if not layer_tree: continue
         uv_map = layer_tree.nodes.get(layer.uv_map)
         if uv_map.inputs[0].default_value == uv_name:
             tangent = layer_tree.nodes.get(layer.tangent)

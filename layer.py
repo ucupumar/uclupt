@@ -9,12 +9,12 @@ from .bake_common import *
 def add_new_layer(tree, layer_name, image, uv_name, tangent_image=None, bitangent_image=None):
     ys = tree.ys
 
+    cur_index = ys.active_layer_index if len(ys.layers)>0 else -1
+
     # Add new layer
     layer = ys.layers.add()
     layer.name = layer_name
 
-    ys.active_layer_index = len(ys.layers) - 1
-    
     # Create the nodes
     layer_tree = bpy.data.node_groups.new(LAYER_GROUP_PREFIX + layer.name, 'GeometryNodeTree')
     layer_tree.ys.is_ysculpt_layer_node = True
@@ -51,11 +51,18 @@ def add_new_layer(tree, layer_name, image, uv_name, tangent_image=None, bitangen
     # Set layer uv name
     layer.uv_name = uv_name
 
-    rearrange_ys_nodes(tree)
-    reconnect_ys_nodes(tree)
-
     # Create info nodes
     create_info_nodes(layer_tree)
+
+    # Move layer
+    last_index = len(ys.layers) - 1
+    target_index = cur_index + 1
+    ys.layers.move(last_index, target_index)
+    ys.active_layer_index = target_index
+
+    # Reconnect main tree
+    rearrange_ys_nodes(tree)
+    reconnect_ys_nodes(tree)
 
 class YSNewLayer(bpy.types.Operator):
     bl_idname = "node.y_new_ysculpt_layer"
@@ -223,6 +230,46 @@ class YSOpenAvailableImageAsLayer(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YSMoveLayer(bpy.types.Operator):
+    bl_idname = "node.ys_move_layer"
+    bl_label = "Move Layer"
+    bl_description = "Move layer"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    direction : EnumProperty(
+            name= 'Direction',
+            description = 'Direction',
+            items = (('UP', 'Up', ''),
+                     ('DOWN', 'Down', ''),
+                     ),
+            default = 'UP'
+            )
+
+    @classmethod
+    def poll(cls, context):
+        ys_tree = get_active_ysculpt_tree()
+        if not ys_tree: return False
+        return len(ys_tree.ys.layers) > 0
+
+    def execute(self, context):
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
+        layer_idx = ys.active_layer_index
+        neighbor_idx = layer_idx+1 if self.direction == 'DOWN' else layer_idx-1
+
+        if neighbor_idx < 0 or neighbor_idx >= len(ys.layers):
+            return {'CANCELLED'}
+
+        ys.layers.move(layer_idx, neighbor_idx)
+
+        ys.active_layer_index = neighbor_idx
+
+        rearrange_ys_nodes(ys_tree)
+        reconnect_ys_nodes(ys_tree)
+
+        return {'FINISHED'}
+
 class YSRemoveLayer(bpy.types.Operator):
     bl_idname = "node.y_remove_ysculpt_layer"
     bl_label = "Remove Layer"
@@ -281,6 +328,7 @@ def update_layer_uv_name(self, context):
     obj = context.object
 
     layer_tree = get_layer_tree(layer)
+    if not layer_tree: return
 
     if layer.uv_name == '':
         if len(obj.data.uv_layers) > 0:
@@ -402,11 +450,13 @@ class YSLayer(bpy.types.PropertyGroup):
 def register():
     bpy.utils.register_class(YSNewLayer)
     bpy.utils.register_class(YSOpenAvailableImageAsLayer)
+    bpy.utils.register_class(YSMoveLayer)
     bpy.utils.register_class(YSRemoveLayer)
     bpy.utils.register_class(YSLayer)
 
 def unregister():
     bpy.utils.unregister_class(YSNewLayer)
     bpy.utils.unregister_class(YSOpenAvailableImageAsLayer)
+    bpy.utils.unregister_class(YSMoveLayer)
     bpy.utils.unregister_class(YSRemoveLayer)
     bpy.utils.unregister_class(YSLayer)
