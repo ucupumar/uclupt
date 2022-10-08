@@ -41,7 +41,7 @@ class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
         layer = context.layer
         mapping = context.mapping
         col = self.layout.column()
-        col.label(text='Mapping')
+        col.label(text='Mapping Options')
         split = col.split(factor=0.4)
         split.label(text='Center:')
         split.prop(mapping.inputs[4], 'default_value', text='')
@@ -110,6 +110,21 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
             split.label(text='Flip X/Y')
             split.prop(layer, 'use_flip_yz', text='')
 
+class YSUVMapMenu(bpy.types.Menu):
+    bl_idname = "NODE_MT_ys_uv_map_layer_menu"
+    bl_description = 'UV Map Menu'
+    bl_label = "UV Map Menu"
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+    
+    def draw(self, context):
+        row = self.layout.row()
+        col = row.column()
+
+        col.operator("mesh.ys_transfer_uv", text='Transfer UV', icon='GROUP_UVS')
+
 class YSNewLayerMenu(bpy.types.Menu):
     bl_idname = "NODE_MT_ys_new_layer_menu"
     bl_description = 'Add New Layer'
@@ -145,8 +160,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         col = self.layout.column()
 
-        #col.operator('mesh.ys_debug_lib', icon='QUESTION')
-        #col.separator()
+        col.operator('mesh.ys_debug_lib', icon='QUESTION')
+        col.separator()
 
         if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
@@ -178,7 +193,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             row = col.row()
             row.label(text='Subdivision', icon='MOD_SUBSURF')
             row.context_pointer_set('ys', ys)
-            row.popover(panel="VIEW3D_PT_ys_subdiv_props", text="", icon='DOWNARROW_HLT')
+            row.popover(panel="VIEW3D_PT_ys_subdiv_props", text="", icon='PREFERENCES')
             #ccol = col.column(align=True)
             split = col.split(factor=0.85)
             #split.prop(subsurf, 'levels', text='Levels')
@@ -254,7 +269,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 row = col.row()
                 row.label(text=image.name, icon='IMAGE_DATA')
                 row.context_pointer_set('layer', layer)
-                row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='DOWNARROW_HLT')
+                row.popover(panel="VIEW3D_PT_ys_layer_props", text="", icon='PREFERENCES')
 
                 row = col.split(factor=0.33, align=False)
                 row.label(text='Blend:')
@@ -264,7 +279,10 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 row.label(text='UV Map:')
                 #uv_map = layer_tree.nodes.get(layer.uv_map)
                 #row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
-                row.prop_search(layer, "uv_name", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+                rrow = row.row(align=True)
+                rrow.prop_search(layer, "uv_name", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+                rrow.context_pointer_set('layer', layer)
+                rrow.menu("NODE_MT_ys_uv_map_layer_menu", text='', icon='PREFERENCES')
 
                 row = col.split(factor=0.33, align=False)
                 row.label(text='')
@@ -275,7 +293,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                 if layer.use_mapping and mapping:
                     rrow.context_pointer_set('layer', layer)
                     rrow.context_pointer_set('mapping', mapping)
-                    rrow.popover(panel="VIEW3D_PT_ys_mapping_props", text="", icon='DOWNARROW_HLT')
+                    rrow.popover(panel="VIEW3D_PT_ys_mapping_props", text="", icon='PREFERENCES')
 
                     row = col.split(factor=0.33, align=False)
                     row.label(text='Translate:')
@@ -299,6 +317,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(NODE_UL_YSculpt_layers)
     bpy.utils.register_class(YSNewLayerMenu)
+    bpy.utils.register_class(YSUVMapMenu)
     bpy.utils.register_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.register_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
@@ -307,6 +326,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(NODE_UL_YSculpt_layers)
     bpy.utils.unregister_class(YSNewLayerMenu)
+    bpy.utils.unregister_class(YSUVMapMenu)
     bpy.utils.unregister_class(VIEW3D_PT_ys_subdiv_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)

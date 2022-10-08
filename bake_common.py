@@ -410,3 +410,52 @@ def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
 
     return tanimage, bitimage
 
+def transfer_uv(obj, image, uv_source_name, uv_target_name):
+
+    uv_source = obj.data.uv_layers.get(uv_source_name)
+    uv_target = obj.data.uv_layers.get(uv_target_name)
+
+    if not uv_source or not uv_target or uv_source == uv_target:
+        return
+
+    context = bpy.context
+    scene = context.scene
+
+    # Duplicate image
+    tmp_image = image.copy()
+
+    # Duplicate object
+    temp = obj.copy()
+    scene.collection.objects.link(temp)
+    temp.data = temp.data.copy()
+
+    # Deselect alland set active
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+    context.view_layer.objects.active = temp
+    temp.select_set(True)
+
+    # Set bake material
+    mat = get_transfer_uv_bake_mat(uv_source_name, tmp_image, image)
+    temp.data.materials.clear()
+    temp.data.materials.append(mat)
+    set_active_uv(temp, uv_target_name)
+
+    # Bake preparations
+    book = remember_before_bake(temp)
+    prepare_bake_settings(book, temp, uv_target_name)
+
+    # Bake
+    bpy.ops.object.bake()
+
+    # Revover bake settings
+    recover_bake_settings(book, True)
+
+    # Remove temp object and image
+    bpy.data.objects.remove(temp, do_unlink=True)
+    bpy.data.images.remove(tmp_image, do_unlink=True)
+    bpy.data.materials.remove(mat)
+
+    # Set back object to active
+    context.view_layer.objects.active = obj
+    obj.select_set(True)

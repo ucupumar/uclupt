@@ -318,6 +318,68 @@ class YSRemoveLayer(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YSTransferUV(bpy.types.Operator):
+    bl_idname = "mesh.ys_transfer_uv"
+    bl_label = "Transfer UV"
+    bl_description = "Transfer image from current UV to another UV"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    uv_map : StringProperty(default='')
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
+    margin : IntProperty(name='Bake Margin',
+            description = 'Bake margin in pixels',
+            default=15, subtype='PIXEL')
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+        #obj = context.object
+        #return len(obj.data.uv_layers) > 1
+
+    def invoke(self, context, event):
+
+        obj = context.object
+        self.layer = context.layer
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV) and uv.name != context.layer.uv_name:
+                self.uv_map_coll.add().name = uv.name
+
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+        row = self.layout.split(factor=0.4)
+
+        col = row.column(align=False)
+        col.label(text='Target UV:')
+        col.label(text='Margin:')
+
+        col = row.column(align=False)
+        col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
+        col.prop(self, 'margin', text='')
+
+    def execute(self, context):
+
+        if self.uv_map == '':
+            self.report({'ERROR'}, "Target UV cannot be empty!")
+            return {'CANCELLED'}
+
+        obj = context.object
+        layer = self.layer
+        image = get_layer_image(layer)
+
+        transfer_uv(obj, image, layer.uv_name, self.uv_map)
+
+        layer.uv_name = self.uv_map
+
+        return {'FINISHED'}
+
 def update_layer_name(self, context):
     pass
 
@@ -452,6 +514,7 @@ def register():
     bpy.utils.register_class(YSOpenAvailableImageAsLayer)
     bpy.utils.register_class(YSMoveLayer)
     bpy.utils.register_class(YSRemoveLayer)
+    bpy.utils.register_class(YSTransferUV)
     bpy.utils.register_class(YSLayer)
 
 def unregister():
@@ -459,4 +522,5 @@ def unregister():
     bpy.utils.unregister_class(YSOpenAvailableImageAsLayer)
     bpy.utils.unregister_class(YSMoveLayer)
     bpy.utils.unregister_class(YSRemoveLayer)
+    bpy.utils.unregister_class(YSTransferUV)
     bpy.utils.unregister_class(YSLayer)

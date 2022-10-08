@@ -12,6 +12,7 @@ SHA_OBJECT2TANGENT = '~ySL SHA Object2Tangent'
 SHA_BITANGENT_CALC = '~ySL SHA Bitangent Calculation'
 SHA_PACK_VECTOR = '~ySL SHA Pack Vector'
 MAT_OFFSET_TANGENT_SPACE = '~ySL MAT Tangent Space Offset'
+MAT_TRANSFER_UV_BAKE = '~ySL MAT Transfer UV Bake'
 MAT_TANGENT_BAKE = '~ySL MAT Tangent Bake'
 MAT_BITANGENT_BAKE = '~ySL MAT Bitangent Bake'
 
@@ -743,6 +744,71 @@ def get_bitangent_calc_shader_tree():
 
     return tree
 
+def get_transfer_uv_bake_mat(source_uv='', source_image=None, target_image=None):
+    mat = bpy.data.materials.get(MAT_TRANSFER_UV_BAKE)
+    if not mat:
+        mat = bpy.data.materials.new(MAT_TRANSFER_UV_BAKE)
+        mat.use_nodes = True
+
+        tree = mat.node_tree
+        nodes = tree.nodes
+        links = tree.links
+
+        # Remove principled
+        prin = [n for n in nodes if n.type == 'BSDF_PRINCIPLED']
+        if prin: nodes.remove(prin[0])
+
+        # Create nodes
+        emission = nodes.new('ShaderNodeEmission')
+        emission.name = emission.label = 'Emission'
+
+        source = nodes.new('ShaderNodeTexImage')
+        source.name = source.label = 'Source'
+
+        uv_map = nodes.new('ShaderNodeUVMap')
+        uv_map.name = uv_map.label = 'UV Map'
+
+        bake_target = nodes.new('ShaderNodeTexImage')
+        bake_target.name = bake_target.label = 'Bake Target'
+        nodes.active = bake_target
+
+        end = nodes.get('Material Output')
+
+        # Node Arrangements
+        loc = Vector((0, 0))
+
+        uv_map.location = loc
+        loc.y -= 300
+
+        bake_target.location = loc
+
+        loc.y = 0
+        loc.x += 200
+
+        source.location = loc
+        loc.x += 300
+
+        emission.location = loc
+        loc.x += 200
+
+        end.location = loc
+
+        # Node Connections
+        links.new(uv_map.outputs[0], source.inputs[0])
+        links.new(source.outputs[0], emission.inputs[0])
+        links.new(emission.outputs[0], end.inputs[0])
+
+    source = mat.node_tree.nodes.get('Source')
+    source.image = source_image
+
+    bake_target = mat.node_tree.nodes.get('Bake Target')
+    bake_target.image = target_image
+
+    uv_map = mat.node_tree.nodes.get('UV Map')
+    uv_map.uv_map = source_uv
+
+    return mat
+
 def get_tangent_bake_mat(uv_name='', target_image=None):
     mat = bpy.data.materials.get(MAT_TANGENT_BAKE)
     if not mat:
@@ -1045,7 +1111,8 @@ class YSDebugLib(bpy.types.Operator):
         #tree = get_object2tangent_shader_tree()
         #tree = get_bitangent_bake_mat()
         #tree = get_blend_geo_tree()
-        tree = get_mapping_geo_tree()
+        #tree = get_mapping_geo_tree()
+        tree = get_transfer_uv_bake_mat()
         return {'FINISHED'}
 
 def register():
