@@ -18,6 +18,7 @@ def reconnect_layer_nodes(layer, tree=None):
     blend = nodes.get(layer.blend)
 
     source = nodes.get(layer.source)
+    flip_yz = nodes.get(layer.flip_yz)
     mapping = nodes.get(layer.mapping)
     mapping_scale = nodes.get(layer.mapping_scale)
     mapping_rotate = nodes.get(layer.mapping_rotate)
@@ -37,6 +38,9 @@ def reconnect_layer_nodes(layer, tree=None):
     create_link(tree, pure_vec, bitangent.inputs['Vector'])
     create_link(tree, tangent.outputs[0], tangent2world.inputs['Tangent'])
     create_link(tree, bitangent.outputs[0], tangent2world.inputs['Bitangent'])
+
+    if flip_yz:
+        offset = create_link(tree, offset, flip_yz.inputs[0])[0]
 
     if layer.use_mapping and mapping and mapping_scale:
         offset = create_link(tree, offset, mapping_scale.inputs[0])[0]

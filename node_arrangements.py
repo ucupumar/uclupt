@@ -41,6 +41,9 @@ def rearrange_layer_nodes(layer, tree=None):
     loc.x += 300
     loc.y = 0
 
+    if check_set_node_loc(tree, layer.flip_yz, loc):
+        loc.x += 200
+
     if check_set_node_loc(tree, layer.mapping_scale, loc):
         loc.x += 200
 

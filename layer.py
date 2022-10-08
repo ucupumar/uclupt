@@ -6,7 +6,7 @@ from .lib import *
 from .common import *
 from .bake_common import *
 
-def add_new_layer(tree, layer_name, image, uv_name):
+def add_new_layer(tree, layer_name, image, uv_name, tangent_image=None, bitangent_image=None):
     ys = tree.ys
 
     # Add new layer
@@ -34,8 +34,11 @@ def add_new_layer(tree, layer_name, image, uv_name):
     uv_map.inputs[0].default_value = uv_name
 
     source = new_node(layer_tree, layer, 'source', 'GeometryNodeImageTexture', 'Source') 
+
     tangent = new_node(layer_tree, layer, 'tangent', 'GeometryNodeImageTexture', 'Tangent') 
+    if tangent_image: tangent.inputs[0].default_value = tangent_image
     bitangent = new_node(layer_tree, layer, 'bitangent', 'GeometryNodeImageTexture', 'Bitangent') 
+    if bitangent_image: bitangent.inputs[0].default_value = bitangent_image
 
     blend = new_node(layer_tree, layer, 'blend', 'GeometryNodeGroup', 'Blend') 
     blend.node_tree = get_blend_geo_tree()
@@ -207,7 +210,8 @@ class YSOpenAvailableImageAsLayer(bpy.types.Operator):
             bake_tangent(obj, self.uv_map)
         
         # Create new layer
-        add_new_layer(ys_tree, image.name, image, self.uv_map)
+        add_new_layer(ys_tree, image.name, image, self.uv_map, 
+                tangent_image=tanimage, bitangent_image=bitimage)
 
         # Set image to image editor
         set_image_to_first_editor(image)
@@ -265,6 +269,24 @@ class YSRemoveLayer(bpy.types.Operator):
 def update_layer_name(self, context):
     pass
 
+def update_layer_use_flip_yz(self, context):
+    layer = self
+    tree = layer.id_data
+    ys = tree.ys
+
+    layer_tree = get_layer_tree(layer)
+    flip_yz = layer_tree.nodes.get(layer.flip_yz)
+
+    if layer.use_flip_yz:
+        if not flip_yz:
+            flip_yz = new_node(layer_tree, layer, 'flip_yz', 'GeometryNodeGroup', 'Flip YZ') 
+            flip_yz.node_tree = get_flip_yz_geo_tree()
+    else:
+        remove_node(layer_tree, layer, 'flip_yz')
+
+    rearrange_layer_nodes(layer, layer_tree)
+    reconnect_layer_nodes(layer, layer_tree)
+
 def update_layer_use_mapping(self, context):
     layer = self
     tree = layer.id_data
@@ -319,10 +341,17 @@ class YSLayer(bpy.types.PropertyGroup):
             default=False, update=update_layer_use_mapping
             )
 
+    use_flip_yz : BoolProperty(
+            name = 'Flip Y/Z Axis', 
+            description = 'Flip Y/Z Azis (Can be useful to load vdm from other software)',
+            default=False, update=update_layer_use_flip_yz
+            )
+
     # Nodes
     group_node : StringProperty(default='')
     source : StringProperty(default='')
     uv_map : StringProperty(default='')
+    flip_yz : StringProperty(default='')
     mapping : StringProperty(default='')
     mapping_scale : StringProperty(default='')
     mapping_rotate : StringProperty(default='')

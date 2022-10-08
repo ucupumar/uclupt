@@ -6,6 +6,7 @@ from .node_connections import *
 GEO_TANGENT2OBJECT = '~ySL GEO Tangent2Object'
 GEO_BLEND = '~ySL GEO Blend'
 GEO_MAPPING = '~ySL GEO Mapping'
+GEO_FLIP_YZ = '~ySL GEO Flip YZ'
 SHA_WORLD2TANGENT = '~ySL SHA World2Tangent'
 SHA_OBJECT2TANGENT = '~ySL SHA Object2Tangent'
 SHA_BITANGENT_CALC = '~ySL SHA Bitangent Calculation'
@@ -614,6 +615,51 @@ def get_pack_vector_shader_tree():
         vec = create_link(tree, vec, multiply.inputs[0])[0]
         vec = create_link(tree, vec, add.inputs[0])[0]
         create_link(tree, vec, end.inputs[0])
+
+        # Info nodes
+        create_info_nodes(tree)
+
+    return tree
+
+def get_flip_yz_geo_tree():
+    tree = bpy.data.node_groups.get(GEO_FLIP_YZ)
+    if not tree:
+        tree = bpy.data.node_groups.new(GEO_FLIP_YZ, 'GeometryNodeTree')
+        nodes = tree.nodes
+        links = tree.links
+
+        create_essential_nodes(tree)
+        start = nodes.get(TREE_START)
+        end = nodes.get(TREE_END)
+
+        # Create IO
+        create_input(tree, 'Vector', 'NodeSocketVector')
+        create_output(tree, 'Vector', 'NodeSocketVector')
+
+        # Create nodes
+        separate = nodes.new('ShaderNodeSeparateXYZ')
+        combine = nodes.new('ShaderNodeCombineXYZ')
+
+        # Node Arrangements
+        loc = Vector((0, 0))
+
+        start.location = loc
+        loc.x += 200
+
+        separate.location = loc
+        loc.x += 200
+
+        combine.location = loc
+        loc.x += 200
+
+        end.location = loc
+
+        # Node connection
+        links.new(start.outputs[0], separate.inputs[0])
+        links.new(separate.outputs[0], combine.inputs[0])
+        links.new(separate.outputs[1], combine.inputs[2])
+        links.new(separate.outputs[2], combine.inputs[1])
+        links.new(combine.outputs[0], end.inputs[0])
 
         # Info nodes
         create_info_nodes(tree)

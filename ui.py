@@ -106,6 +106,10 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
             split.label(text='Image Extension')
             split.prop(source, 'extension', text='')
 
+            split = col.split(factor=0.5)
+            split.label(text='Flip X/Y')
+            split.prop(layer, 'use_flip_yz', text='')
+
 class YSNewLayerMenu(bpy.types.Menu):
     bl_idname = "NODE_MT_ys_new_layer_menu"
     bl_description = 'Add New Layer'
