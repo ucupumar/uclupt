@@ -69,7 +69,7 @@ def reconnect_ys_nodes(tree):
     geo = start.outputs['Geometry']
     offset = ofstart.outputs[0]
 
-    for layer in ys.layers:
+    for layer in reversed(ys.layers):
         layer_node = nodes.get(layer.group_node)
         if layer_node:
             offset = create_link(tree, offset, layer_node.inputs[0])[0]

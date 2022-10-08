@@ -83,7 +83,7 @@ def rearrange_ys_nodes(tree):
     loc.x += 200
     #loc.y = 0
 
-    for layer in ys.layers:
+    for layer in reversed(ys.layers):
         layer_tree = get_layer_tree(layer)
         check_set_node_loc(tree, layer.group_node, loc)
         loc.x += 200
