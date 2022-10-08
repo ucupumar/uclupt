@@ -260,8 +260,9 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
                 row = col.split(factor=0.33, align=False)
                 row.label(text='UV Map:')
-                uv_map = layer_tree.nodes.get(layer.uv_map)
-                row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+                #uv_map = layer_tree.nodes.get(layer.uv_map)
+                #row.prop_search(uv_map.inputs[0], "default_value", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
+                row.prop_search(layer, "uv_name", context.object.data, "uv_layers", text='', icon='GROUP_UVS')
 
                 row = col.split(factor=0.33, align=False)
                 row.label(text='')

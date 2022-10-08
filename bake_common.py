@@ -349,6 +349,9 @@ def bake_tangent(obj, uv_name=''):
 
 def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
 
+    tanimage_name = obj.name + '_' + uv_name + '_tangent'
+    bitimage_name = obj.name + '_' + uv_name + '_bitangent'
+
     tanimage = None
     bitimage = None
 
@@ -369,15 +372,21 @@ def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
 
     is_newly_created = False
 
+    # Search using name
     if not tanimage:
-        tanimage_name = obj.name + '_' + uv_name + '_tangent'
+        tanimage = bpy.data.images.get(tanimage_name)
+
+    if not bitimage:
+        bitimage = bpy.data.images.get(bitimage_name)
+
+    # Create if still not found
+    if not tanimage:
         tanimage = bpy.data.images.new(name=tanimage_name,
                 width=1024, height=1024, alpha=False, float_buffer=True)
         tanimage.generated_color = (0,0,0,1)
         is_newly_created = True
 
     if not bitimage:
-        bitimage_name = obj.name + '_' + uv_name + '_bitangent'
         bitimage = bpy.data.images.new(name=bitimage_name,
                 width=1024, height=1024, alpha=False, float_buffer=True)
         bitimage.generated_color = (0,0,0,1)

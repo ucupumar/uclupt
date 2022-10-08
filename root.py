@@ -52,6 +52,10 @@ class YCreateYScluptNode(bpy.types.Operator):
     def execute(self, context):
         obj = context.object
 
+        if len(obj.data.uv_layers) == 0:
+            self.report({'ERROR'}, "Need at least one proper uv map!")
+            return {'CANCELLED'}
+
         # Get subsurf modifier
         subsurf = [m for m in obj.modifiers if m.type == 'SUBSURF']
         if subsurf: subsurf = subsurf[0]

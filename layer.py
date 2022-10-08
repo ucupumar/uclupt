@@ -271,6 +271,33 @@ class YSRemoveLayer(bpy.types.Operator):
 def update_layer_name(self, context):
     pass
 
+def update_layer_uv_name(self, context):
+    layer = self
+    tree = layer.id_data
+    ys = tree.ys
+    obj = context.object
+
+    layer_tree = get_layer_tree(layer)
+
+    if layer.uv_name == '':
+        if len(obj.data.uv_layers) > 0:
+            layer.uv_name = obj.data.uv_layers.active.name
+    else:
+        # Get tangent image
+        tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, layer.uv_name, return_is_newly_created=True)
+
+        tangent = layer_tree.nodes.get(layer.tangent)
+        if tangent: tangent.inputs[0].default_value = tanimage
+
+        bitangent = layer_tree.nodes.get(layer.bitangent)
+        if bitangent: bitangent.inputs[0].default_value = bitimage
+
+        uv_map = layer_tree.nodes.get(layer.uv_map)
+        if uv_map: uv_map.inputs[0].default_value = layer.uv_name
+
+        if is_newly_created_tangent:
+            bake_tangent(obj, layer.uv_name)
+
 def update_layer_use_flip_yz(self, context):
     layer = self
     tree = layer.id_data
@@ -347,6 +374,12 @@ class YSLayer(bpy.types.PropertyGroup):
             name = 'Flip Y/Z Axis', 
             description = 'Flip Y/Z Azis (Can be useful to load vdm from other software)',
             default=False, update=update_layer_use_flip_yz
+            )
+
+    uv_name : StringProperty(
+            name = 'UV Name',
+            description = 'UV map name',
+            default='', update=update_layer_uv_name
             )
 
     # Nodes
