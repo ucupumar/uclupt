@@ -48,6 +48,9 @@ def add_new_layer(tree, layer_name, image, uv_name, tangent_image=None, bitangen
 
     source.inputs[0].default_value = image
 
+    # Set layer uv name
+    layer.uv_name = uv_name
+
     rearrange_ys_nodes(tree)
     reconnect_ys_nodes(tree)
 
