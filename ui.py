@@ -173,8 +173,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
         col = self.layout.column()
 
-        col.operator('mesh.ys_debug_lib', icon='QUESTION')
-        col.separator()
+        #col.operator('mesh.ys_debug_lib', icon='QUESTION')
+        #col.separator()
 
         if not ys_tree:
             col.operator('mesh.y_create_ysculpt_setup', icon='MOD_MULTIRES')
@@ -267,7 +267,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             #row = col.row()
             elif obj.mode == 'SCULPT':
                 if multires:
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer').ignore_tangent_bake = False
                     row = col.row()
                     row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')
                 else:
@@ -277,7 +277,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             else:
                 if multires:
                     row.alert = True
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer').ignore_tangent_bake = False
                     row.alert = False
                     row = col.row()
                     row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')

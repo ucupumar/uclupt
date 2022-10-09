@@ -64,6 +64,8 @@ def add_new_layer(tree, layer_name, image, uv_name, tangent_image=None, bitangen
     rearrange_ys_nodes(tree)
     reconnect_ys_nodes(tree)
 
+    return layer
+
 class YSNewLayer(bpy.types.Operator):
     bl_idname = "node.y_new_ysculpt_layer"
     bl_label = "New Layer"

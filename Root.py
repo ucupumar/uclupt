@@ -4,9 +4,9 @@ from .common import *
 from .lib import *
 from .node_arrangements import *
 from .node_connections import *
-from . import layer
+from . import Layer #, Disp
 
-class YCreateYScluptNode(bpy.types.Operator):
+class YSCreateYScluptNode(bpy.types.Operator):
     bl_idname = "mesh.y_create_ysculpt_setup"
     bl_label = "New " + get_addon_title() + " Setup"
     bl_description = "New " + get_addon_title() + " Geometry Node Setup"
@@ -27,11 +27,45 @@ class YCreateYScluptNode(bpy.types.Operator):
             default = 'CATMULL_CLARK'
             )
 
+    # For first layer if multires already exist
+    layer_name : StringProperty(
+            name = 'New Layer Name',
+            description = 'New layer name',
+            default='')
+
+    width : IntProperty(name='Width', default = 1024, min=1, max=4096)
+    height : IntProperty(name='Height', default = 1024, min=1, max=4096)
+
+    uv_map : StringProperty(default='')
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
     @classmethod
     def poll(cls, context):
         return context.object and context.object.type == 'MESH'
 
     def invoke(self, context, event):
+        obj = context.object
+
+        # Check if multires already exist
+        self.multires_exists = False
+        multires = get_multires_modifier(obj)
+        if multires: 
+            self.multires_exists = True
+            self.levels = multires.total_levels
+
+        # Layer name
+        self.layer_name = get_unique_name(obj.name + ' Layer', bpy.data.images)
+
+        # Set uv name
+        active_uv = obj.data.uv_layers.active
+        self.uv_map = active_uv.name
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV):
+                self.uv_map_coll.add().name = uv.name
+
         return context.window_manager.invoke_props_dialog(self)
 
     def check(self, context):
@@ -49,6 +83,31 @@ class YCreateYScluptNode(bpy.types.Operator):
         crow = col.row(align=True)
         crow.prop(self, 'subdivision_type', expand=True)
 
+        self.layout.label(text='New Layer from Multires', icon='IMAGE_DATA')
+
+        if self.multires_exists:
+            #self.layout.separator()
+            box = self.layout.box()
+            bcol = box.column(align=True)
+            #bcol.label(text='New Layer from Multires')
+            row = bcol.split(factor=0.35)
+
+            col = row.column(align=False)
+
+            #col.label(text='')
+            col.label(text='Name:')
+            col.label(text='Width:')
+            col.label(text='Height:')
+            col.label(text='UV Map:')
+
+            col = row.column(align=False)
+
+            #col.label(text='New Layer from Multires')
+            col.prop(self, 'layer_name', text='')
+            col.prop(self, 'width', text='')
+            col.prop(self, 'height', text='')
+            col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
+
     def execute(self, context):
         obj = context.object
 
@@ -65,6 +124,14 @@ class YCreateYScluptNode(bpy.types.Operator):
         subsurf.levels = self.levels
         subsurf.render_levels = self.levels
         subsurf.subdivision_type = self.subdivision_type
+
+        # Check if multires already exist
+        multires = get_multires_modifier(obj)
+
+        # Disable subsurf if multires is found
+        if multires:
+            subsurf.show_viewport = False
+            subsurf.show_render = False
 
         # Get geonode
         geomod = [m for m in obj.modifiers if m.type == 'NODES' and m.node_group.ys.is_ysculpt_node]
@@ -118,6 +185,36 @@ class YCreateYScluptNode(bpy.types.Operator):
 
             rearrange_ys_nodes(tree)
             reconnect_ys_nodes(tree)
+
+        # Set new layer if multires is found
+        if multires:
+
+            tree = geomod.node_group
+
+            # Disable geomod first
+            geomod.show_viewport = False
+            geomod.show_render = False
+
+            # Create image data
+            image = bpy.data.images.new(name=self.layer_name, 
+                    width=self.width, height=self.height, alpha=False, float_buffer=True)
+            image.generated_color = (0,0,0,1)
+
+            # Add new layer
+            layer = Layer.add_new_layer(tree, self.layer_name, image, self.uv_map)
+
+            # Bake multires to layer
+            bpy.ops.mesh.y_apply_sculpt_to_vdm_layer(ignore_tangent_bake=True)
+            #Disp.bake_multires_to_layer(obj, layer)
+
+            # Reference the ys manually to avoid pointer error
+            #ys_tree = get_active_ysculpt_tree()
+            #ys = ys_tree.ys
+            #layer = ys.layers[0]
+
+            ## Pack image
+            #image = get_layer_image(layer)
+            #image.pack()
 
         return {'FINISHED'}
 
@@ -272,7 +369,7 @@ class YSculpt(bpy.types.PropertyGroup):
     version : StringProperty(default='')
 
     # Layers
-    layers : CollectionProperty(type=layer.YSLayer)
+    layers : CollectionProperty(type=Layer.YSLayer)
     active_layer_index : IntProperty(default=0, update=update_layer_index)
 
     # Subdiv
@@ -291,7 +388,7 @@ class YSculpt(bpy.types.PropertyGroup):
     bitangent : StringProperty(default='')
 
 def register():
-    bpy.utils.register_class(YCreateYScluptNode)
+    bpy.utils.register_class(YSCreateYScluptNode)
     bpy.utils.register_class(YSSubdivide)
     bpy.utils.register_class(YSDeleteHigherSubdivision)
     bpy.utils.register_class(YSFixSubsurf)
@@ -300,7 +397,7 @@ def register():
     bpy.types.GeometryNodeTree.ys = PointerProperty(type=YSculpt)
 
 def unregister():
-    bpy.utils.unregister_class(YCreateYScluptNode)
+    bpy.utils.unregister_class(YSCreateYScluptNode)
     bpy.utils.unregister_class(YSSubdivide)
     bpy.utils.unregister_class(YSDeleteHigherSubdivision)
     bpy.utils.unregister_class(YSFixSubsurf)

@@ -1,5 +1,6 @@
 import bpy, numpy, time
 from mathutils import *
+from bpy.props import *
 from .lib import *
 from .bake_common import *
 from .common import *
@@ -198,6 +199,8 @@ class YSApplySculptToLayer(bpy.types.Operator):
     bl_description = "Apply sculpt to vector displacement layer"
     bl_options = {'REGISTER', 'UNDO'}
 
+    ignore_tangent_bake : BoolProperty(default=False)
+
     @classmethod
     def poll(cls, context):
         return get_active_ysculpt_tree()
@@ -240,7 +243,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
         tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=True)
 
         # Check if tangent image is just created, bake if that's the case
-        if is_newly_created_tangent:
+        if is_newly_created_tangent and not self.ignore_tangent_bake:
             bake_tangent(obj, uv_name)
 
         # Bake multires to layer
@@ -248,7 +251,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
         #return {'FINISHED'}
 
         # Bake tangent if it's not just created
-        if not is_newly_created_tangent:
+        if not is_newly_created_tangent and not self.ignore_tangent_bake:
             bake_tangent(obj, uv_name)
 
         # Remove multires

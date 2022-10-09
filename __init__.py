@@ -18,12 +18,12 @@ if "bpy" in locals():
     imp.reload(image_ops)
     imp.reload(node_arrangements)
     imp.reload(node_connections)
-    imp.reload(disp)
-    imp.reload(layer)
-    imp.reload(root)
+    imp.reload(Disp)
+    imp.reload(Layer)
+    imp.reload(Root)
     imp.reload(ui)
 else:
-    from . import common, icon_lib, lib, bake_common, image_ops, node_arrangements, node_connections, disp, layer, root, ui
+    from . import common, icon_lib, lib, bake_common, image_ops, node_arrangements, node_connections, Disp, Layer, Root, ui
 
 import bpy 
 
@@ -31,18 +31,18 @@ def register():
     icon_lib.register()
     lib.register()
     image_ops.register()
-    disp.register()
-    layer.register()
-    root.register()
+    Disp.register()
+    Layer.register()
+    Root.register()
     ui.register()
 
 def unregister():
     icon_lib.unregister()
     lib.unregister()
     image_ops.unregister()
-    disp.unregister()
-    layer.unregister()
-    root.unregister()
+    Disp.unregister()
+    Layer.unregister()
+    Root.unregister()
     ui.unregister()
 
 if __name__ == "__main__":
