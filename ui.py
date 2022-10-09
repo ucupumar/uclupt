@@ -57,7 +57,7 @@ class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
 class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
     bl_label = "Subdivion Properties"
     bl_description = "Subdivision Properties"
-    bl_ui_units_x = 10
+    bl_ui_units_x = 13
     #bl_options = {'INSTANCED'}
     #bl_options = {'INSTANCED', 'DRAW_BOX'}
     bl_space_type = 'VIEW_3D' # 'PROPERTIES'
@@ -65,7 +65,7 @@ class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
 
     def draw(self, context):
         ys = context.ys
-        split = self.layout.split(factor=0.5)
+        split = self.layout.split(factor=0.35)
         multires = get_active_multires_modifier()
         geo, subsurf = get_active_ysculpt_modifiers()
 
@@ -75,13 +75,11 @@ class VIEW3D_PT_ys_subdiv_props(bpy.types.Panel):
 
         col = split.column()
         if not multires:
-            col.prop(subsurf, 'subdivision_type', text='')
+            row = col.row(align=True)
+            row.prop(subsurf, 'subdivision_type', expand=True)
         else:
             title = 'Catmull-Clark' if subsurf.subdivision_type == 'CATMULL_CLARK' else 'Simple'
             col.label(text=title)
-
-        col = self.layout.column()
-        col.operator('mesh.ys_bake_tangent', text='Bake Tangent', icon='RESTRICT_RENDER_OFF')
 
 class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
     #bl_idname = "OBJECT_PT_YS_layer_properties"
@@ -114,6 +112,12 @@ class VIEW3D_PT_ys_layer_props(bpy.types.Panel):
             split.label(text='Flip X/Y')
             split.prop(layer, 'use_flip_yz', text='')
 
+            col.separator()
+
+            image = source.inputs[0].default_value
+            col.context_pointer_set('image', image)
+            col.operator("node.ys_resize_image", text='Resize Image', icon='FULLSCREEN_ENTER')
+
 class YSUVMapMenu(bpy.types.Menu):
     bl_idname = "NODE_MT_ys_uv_map_layer_menu"
     bl_description = 'UV Map Menu'
@@ -126,6 +130,10 @@ class YSUVMapMenu(bpy.types.Menu):
     def draw(self, context):
         row = self.layout.row()
         col = row.column()
+
+        col.operator('mesh.ys_bake_tangent', text='Refresh Tangent', icon='FILE_REFRESH')
+
+        col.separator()
 
         col.operator("mesh.ys_transfer_uv", text='Transfer UV', icon='GROUP_UVS')
         col.operator("mesh.ys_transfer_all_uvs", text='Transfer All Layer UV', icon='GROUP_UVS')
