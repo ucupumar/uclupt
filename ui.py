@@ -1,5 +1,6 @@
 import bpy
 from .common import *
+from . import icon_lib
 
 class NODE_UL_YSculpt_layers(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -10,13 +11,16 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
         multires = get_active_multires_modifier()
 
         row = split.row(align=True)
+        rrow = row.row()
 
         source = tree.nodes.get(layer.source)
         image = source.inputs[0].default_value
         if image:
-            row.prop(image, 'name', text='', emboss=False, icon='IMAGE_DATA')
+            rrow.prop(image, 'name', text='', emboss=False, icon='IMAGE_DATA')
         else:
-            row.prop(layer, 'name', text='', emboss=False, icon='TEXTURE')
+            rrow.prop(layer, 'name', text='', emboss=False, icon='TEXTURE')
+        if image.is_dirty:
+            rrow.label(text='', icon_value=icon_lib.get_icon('asterisk'))
 
         blend = tree.nodes.get(layer.blend)
 

@@ -22,6 +22,9 @@ def get_addon_title():
     bl_info = sys.modules[get_addon_name()].bl_info
     return bl_info['name']
 
+def get_addon_filepath():
+    return os.path.dirname(bpy.path.abspath(__file__)) + os.sep
+
 def get_current_version_str():
     bl_info = sys.modules[get_addon_name()].bl_info
     return str(bl_info['version']).replace(', ', '.').replace('(','').replace(')','')
