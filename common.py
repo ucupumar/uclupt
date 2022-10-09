@@ -380,3 +380,9 @@ def set_image_to_first_editor(image):
         # Hack for Blender 2.8 which keep pinning image automatically
         space.use_image_pin = False
 
+def is_uv_name_available(obj, uv_name):
+    for uv in obj.data.uv_layers:
+        if uv.name == uv_name:
+            return True
+
+    return False

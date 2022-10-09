@@ -318,6 +318,59 @@ class YSRemoveLayer(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YSFixMissingUV(bpy.types.Operator):
+    bl_idname = "mesh.ys_fix_missing_uv"
+    bl_label = "Fix Missing UV"
+    bl_description = "Fix missing uv"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    source_uv_name : StringProperty(name='Missing UV Name', description='Missing UV Name', default='')
+    target_uv_name : StringProperty(name='Target UV Name', description='Target UV Name', default='')
+
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return get_active_ysculpt_tree() and obj.type == 'MESH'
+
+    def invoke(self, context, event):
+        obj = context.object
+
+        self.target_uv_name = ''
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV):
+                self.uv_map_coll.add().name = uv.name
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+
+        row = self.layout.split(factor=0.5)
+
+        row.label(text='Remap ' + self.source_uv_name + ' to:')
+        row.prop_search(self, "target_uv_name", self, "uv_map_coll", text='', icon='GROUP_UVS')
+
+    def execute(self, context):
+
+        obj = context.object
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
+        if self.target_uv_name == '':
+            self.report({'ERROR'}, "Target UV name cannot be empty!")
+            return {'CANCELLED'}
+
+        # Check all layers uv
+        for layer in ys.layers:
+            if layer.uv_name == self.source_uv_name:
+                layer.uv_name = self.target_uv_name
+
+        return {'FINISHED'}
+
 class YSTransferUV(bpy.types.Operator):
     bl_idname = "mesh.ys_transfer_uv"
     bl_label = "Transfer UV"
@@ -377,11 +430,101 @@ class YSTransferUV(bpy.types.Operator):
             self.report({'ERROR'}, "Cannot transfer layer image with mapping enabled!")
             return {'CANCELLED'}
 
+        # Get image
         image = get_layer_image(layer)
 
+        # Transfer uv
         transfer_uv(obj, image, layer.uv_name, self.uv_map)
 
+        # Set new uv
         layer.uv_name = self.uv_map
+
+        return {'FINISHED'}
+
+class YSTransferAllUVs(bpy.types.Operator):
+    bl_idname = "mesh.ys_transfer_all_uvs"
+    bl_label = "Transfer All UVs"
+    bl_description = "Transfer all images using same UV to another UV"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    from_uv_map : StringProperty(default='')
+    uv_map : StringProperty(default='')
+    uv_map_coll : CollectionProperty(type=bpy.types.PropertyGroup)
+
+    margin : IntProperty(name='Bake Margin',
+            description = 'Bake margin in pixels',
+            default=15, subtype='PIXEL')
+
+    @classmethod
+    def poll(cls, context):
+        return get_active_ysculpt_tree()
+
+    def invoke(self, context, event):
+
+        obj = context.object
+        self.layer = context.layer
+
+        # UV Map collections update
+        self.uv_map_coll.clear()
+        for uv in obj.data.uv_layers:
+            if not uv.name.startswith(YP_TEMP_UV): #and uv.name != context.layer.uv_name:
+                self.uv_map_coll.add().name = uv.name
+
+        self.from_uv_map = self.layer.uv_name
+
+        return context.window_manager.invoke_props_dialog(self, width=320)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+        row = self.layout.split(factor=0.4)
+
+        col = row.column(align=False)
+        col.label(text='From UV:')
+        col.label(text='To UV:')
+        col.label(text='Margin:')
+
+        col = row.column(align=False)
+        col.prop_search(self, "from_uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
+        col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
+        col.prop(self, 'margin', text='')
+
+    def execute(self, context):
+
+        obj = context.object
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
+        if self.layer.use_mapping:
+            self.report({'ERROR'}, "Cannot transfer layer image with mapping enabled!")
+            return {'CANCELLED'}
+
+        if self.from_uv_map == '' or self.uv_map == '':
+            self.report({'ERROR'}, "From or To UV Map cannot be empty!")
+            return {'CANCELLED'}
+
+        if self.from_uv_map == self.uv_map:
+            self.report({'ERROR'}, "From and To UV cannot have same value!")
+            return {'CANCELLED'}
+
+        failed_layers = []
+        for layer in ys.layers:
+            if layer.use_mapping: 
+                failed_layers.append(layer)
+                continue
+
+            # Get image
+            image = get_layer_image(layer)
+
+            # Transfer uv
+            transfer_uv(obj, image, layer.uv_name, self.uv_map)
+
+            # Set new uv
+            layer.uv_name = self.uv_map
+
+        if any(failed_layers):
+            self.report({'INFO'}, "Failed to transfer " + str(len(failed_layers)) + " layer(s) because they used mapping!")
 
         return {'FINISHED'}
 
@@ -519,7 +662,9 @@ def register():
     bpy.utils.register_class(YSOpenAvailableImageAsLayer)
     bpy.utils.register_class(YSMoveLayer)
     bpy.utils.register_class(YSRemoveLayer)
+    bpy.utils.register_class(YSFixMissingUV)
     bpy.utils.register_class(YSTransferUV)
+    bpy.utils.register_class(YSTransferAllUVs)
     bpy.utils.register_class(YSLayer)
 
 def unregister():
@@ -527,5 +672,7 @@ def unregister():
     bpy.utils.unregister_class(YSOpenAvailableImageAsLayer)
     bpy.utils.unregister_class(YSMoveLayer)
     bpy.utils.unregister_class(YSRemoveLayer)
+    bpy.utils.unregister_class(YSFixMissingUV)
     bpy.utils.unregister_class(YSTransferUV)
+    bpy.utils.unregister_class(YSTransferAllUVs)
     bpy.utils.unregister_class(YSLayer)

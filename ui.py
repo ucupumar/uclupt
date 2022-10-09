@@ -124,6 +124,7 @@ class YSUVMapMenu(bpy.types.Menu):
         col = row.column()
 
         col.operator("mesh.ys_transfer_uv", text='Transfer UV', icon='GROUP_UVS')
+        col.operator("mesh.ys_transfer_all_uvs", text='Transfer All Layer UV', icon='GROUP_UVS')
 
 class YSNewLayerMenu(bpy.types.Menu):
     bl_idname = "NODE_MT_ys_new_layer_menu"
@@ -246,7 +247,13 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             col = self.layout.column()
 
             row = col.row()
-            if obj.mode == 'SCULPT':
+            if not is_uv_name_available(obj, layer.uv_name):
+                row.alert = True
+                row.operator('mesh.ys_fix_missing_uv', icon='ERROR', text='Fix Missing UV').source_uv_name = layer.uv_name
+                row.alert = False
+
+            #row = col.row()
+            elif obj.mode == 'SCULPT':
                 if multires:
                     row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
                     row = col.row()
