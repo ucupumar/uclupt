@@ -71,9 +71,10 @@ def bake_multires_to_layer(obj, layer):
     scene.collection.objects.link(temp0)
     temp0.data = temp0.data.copy()
     temp0.location = obj.location + Vector(((obj.dimensions[0]+0.1)*1, 0.0, 0.0))
-    
-    # Delete multires
+
+    # Delete multires and shape keys
     context.view_layer.objects.active = temp0
+    if temp0.data.shape_keys: bpy.ops.object.shape_key_remove(all=True)
     max_level = 0
     for mod in temp0.modifiers:
         if mod.type == 'MULTIRES':
@@ -87,6 +88,7 @@ def bake_multires_to_layer(obj, layer):
     tsubsurf.levels = max_level
     tsubsurf.render_levels = max_level
     bpy.ops.object.modifier_apply(modifier=tsubsurf.name)
+    #apply_modifiers_with_shape_keys(temp0, [tsubsurf], True)
 
     # Temp object 1: Mesh with active layer disabled
     temp1 = temp0.copy()
@@ -100,6 +102,7 @@ def bake_multires_to_layer(obj, layer):
     layer.enable = False
     tgeo.show_viewport = True
     bpy.ops.object.modifier_apply(modifier=tgeo.name)
+    #apply_modifiers_with_shape_keys(temp1, [tgeo], True)
 
     # Remove geo modifier
     ys_mods = [m for m in temp0.modifiers if m.type == 'NODES' and m.node_group and m.node_group.ys.is_ysculpt_node]
@@ -114,10 +117,12 @@ def bake_multires_to_layer(obj, layer):
     
     # Apply multires
     context.view_layer.objects.active = temp2
+    if temp2.data.shape_keys: bpy.ops.object.shape_key_remove(all=True)
     for mod in temp2.modifiers:
         if mod.type == 'MULTIRES':
             mod.levels = max_level
             bpy.ops.object.modifier_apply(modifier=mod.name)
+            #apply_modifiers_with_shape_keys(temp2, [mod], True)
             break
 
     # Calculate offset from two temp objects
