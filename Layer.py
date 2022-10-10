@@ -644,6 +644,9 @@ class YSLayer(bpy.types.PropertyGroup):
             description = 'UV map name',
             default='', update=update_layer_uv_name
             )
+    
+    # For saving original state while sculpting
+    ori_enable : BoolProperty(default=True)
 
     # Nodes
     group_node : StringProperty(default='')

@@ -32,6 +32,22 @@ class NODE_UL_YSculpt_layers(bpy.types.UIList):
             else: eye_icon = 'HIDE_ON'
             row.prop(layer, 'enable', emboss=False, text='', icon=eye_icon)
 
+class VIEW3D_PT_ys_sculpt_props(bpy.types.Panel):
+    bl_label = "Sculpt Properties"
+    bl_description = "Sculpt Properties"
+    bl_ui_units_x = 10
+    #bl_options = {'INSTANCED'}
+    #bl_options = {'INSTANCED', 'DRAW_BOX'}
+    bl_space_type = 'VIEW_3D' # 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+
+    def draw(self, context):
+        layer = context.layer
+        ys = layer.id_data.ys
+        col = self.layout.column()
+        col.label(text='Sculpt Options')
+        col.prop(ys, 'hide_other_layers')
+
 class VIEW3D_PT_ys_mapping_props(bpy.types.Panel):
     bl_label = "Mapping Properties"
     bl_description = "Mapping Properties"
@@ -258,7 +274,8 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
 
             col = self.layout.column()
 
-            row = col.row()
+            row = col.row(align=True)
+            row.context_pointer_set('layer', layer)
             if not is_uv_name_available(obj, layer.uv_name):
                 row.alert = True
                 row.operator('mesh.ys_fix_missing_uv', icon='ERROR', text='Fix Missing UV').source_uv_name = layer.uv_name
@@ -274,6 +291,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                     row.alert = True
                     row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
                     row.alert = False
+                    row.popover(panel="VIEW3D_PT_ys_sculpt_props", text="", icon='PREFERENCES')
             else:
                 if multires:
                     row.alert = True
@@ -283,6 +301,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
                     row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')
                 else:
                     row.operator('mesh.y_sculpt_layer', icon='SCULPTMODE_HLT', text='Sculpt Layer')
+                    row.popover(panel="VIEW3D_PT_ys_sculpt_props", text="", icon='PREFERENCES')
 
             if not multires:
                 row = col.row()
@@ -338,6 +357,7 @@ def register():
     bpy.utils.register_class(YSNewLayerMenu)
     bpy.utils.register_class(YSUVMapMenu)
     bpy.utils.register_class(VIEW3D_PT_ys_subdiv_props)
+    bpy.utils.register_class(VIEW3D_PT_ys_sculpt_props)
     bpy.utils.register_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.register_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.register_class(UCLUPT_PT_main_panel)
@@ -347,6 +367,7 @@ def unregister():
     bpy.utils.unregister_class(YSNewLayerMenu)
     bpy.utils.unregister_class(YSUVMapMenu)
     bpy.utils.unregister_class(VIEW3D_PT_ys_subdiv_props)
+    bpy.utils.unregister_class(VIEW3D_PT_ys_sculpt_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_mapping_props)
     bpy.utils.unregister_class(VIEW3D_PT_ys_layer_props)
     bpy.utils.unregister_class(UCLUPT_PT_main_panel)

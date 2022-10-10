@@ -382,6 +382,13 @@ class YSculpt(bpy.types.PropertyGroup):
     # For saving modifier orders
     ori_armature_index : IntProperty(default=0)
 
+    # Sculpt options
+    hide_other_layers : BoolProperty(
+            name = 'Hide Other Layers',
+            description = 'Hide other layers while sculpting',
+            default = False
+            )
+
     # Nodes
     uv_map : StringProperty(default='')
     tangent : StringProperty(default='')

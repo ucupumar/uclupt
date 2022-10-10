@@ -287,6 +287,12 @@ class YSApplySculptToLayer(bpy.types.Operator):
         # Restore armature to original index
         restore_armature_order(obj)
 
+        # Unhide other layers
+        if ys.hide_other_layers:
+            for l in ys.layers:
+                if l != layer:
+                    l.enable = l.ori_enable
+
         print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
         return {'FINISHED'}
@@ -384,6 +390,13 @@ class YSSculptLayer(bpy.types.Operator):
 
         # Get modifiers
         geo, subsurf = get_ysculpt_modifiers(obj)
+
+        # Hide other layers
+        if ys.hide_other_layers:
+            for l in ys.layers:
+                if l != layer:
+                    l.ori_enable = l.enable
+                    l.enable = False
 
         # Disable other modifiers
         ori_show_viewports = {}
