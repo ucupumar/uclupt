@@ -294,9 +294,13 @@ def bake_tangent(obj, uv_name=''):
     # Get ys geo and subsurf modifiers of temp object
     tgeo, tsubsurf = get_ysculpt_modifiers(temp)
 
-    # Disable ys modifiers
-    tgeo.show_viewport = False
-    tgeo.show_render = False
+    # Disable non subsurf modifiers
+    for m in temp.modifiers:
+        if m != tsubsurf:
+            m.show_viewport = False
+            m.show_render = False
+    #tgeo.show_viewport = False
+    #tgeo.show_render = False
 
     # Set subsurf to max levels
     tsubsurf.show_viewport = True
