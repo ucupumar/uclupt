@@ -12,6 +12,7 @@ bl_info = {
 if "bpy" in locals():
     import imp
     imp.reload(common)
+    imp.reload(preferences)
     imp.reload(icon_lib)
     imp.reload(lib)
     imp.reload(bake_common)
@@ -23,11 +24,12 @@ if "bpy" in locals():
     imp.reload(Root)
     imp.reload(ui)
 else:
-    from . import common, icon_lib, lib, bake_common, image_ops, node_arrangements, node_connections, Disp, Layer, Root, ui
+    from . import common, preferences, icon_lib, lib, bake_common, image_ops, node_arrangements, node_connections, Disp, Layer, Root, ui
 
 import bpy 
 
 def register():
+    preferences.register()
     icon_lib.register()
     lib.register()
     image_ops.register()
@@ -37,6 +39,7 @@ def register():
     ui.register()
 
 def unregister():
+    preferences.unregister()
     icon_lib.unregister()
     lib.unregister()
     image_ops.unregister()

@@ -58,6 +58,9 @@ def create_output(tree, name, socket_type, default_value=None):
         outp = tree.outputs.new(socket_type, name)
         if default_value != None: outp.default_value = default_value
 
+def get_user_preferences():
+    return bpy.context.preferences.addons[__package__].preferences
+
 def new_node(tree, entity, prop, node_id_name, label=''):
     ''' Create new node '''
     if not hasattr(entity, prop): return

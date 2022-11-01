@@ -284,7 +284,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             #row = col.row()
             elif obj.mode == 'SCULPT':
                 if multires:
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer').ignore_tangent_bake = False
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
                     row = col.row()
                     row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')
                 else:
@@ -295,7 +295,7 @@ class UCLUPT_PT_main_panel(bpy.types.Panel):
             else:
                 if multires:
                     row.alert = True
-                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer').ignore_tangent_bake = False
+                    row.operator('mesh.y_apply_sculpt_to_vdm_layer', icon='SCULPTMODE_HLT', text='Apply Sculpt to Layer')
                     row.alert = False
                     row = col.row()
                     row.operator('mesh.y_cancel_sculpt_layer', icon='X', text='Cancel Sculpt')

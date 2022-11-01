@@ -204,8 +204,6 @@ class YSApplySculptToLayer(bpy.types.Operator):
     bl_description = "Apply sculpt to vector displacement layer"
     bl_options = {'REGISTER', 'UNDO'}
 
-    ignore_tangent_bake : BoolProperty(default=False)
-
     @classmethod
     def poll(cls, context):
         return get_active_ysculpt_tree()
@@ -216,6 +214,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
         obj = context.object
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys
+        ysup = get_user_preferences()
 
         if ys.active_layer_index < 0 or ys.active_layer_index >= len(ys.layers):
             self.report({'ERROR'}, "Cannot get active layer!")
@@ -248,7 +247,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
         tanimage, bitimage, is_newly_created_tangent = get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=True)
 
         # Check if tangent image is just created, bake if that's the case
-        if is_newly_created_tangent and not self.ignore_tangent_bake:
+        if is_newly_created_tangent:
             bake_tangent(obj, uv_name)
 
         # Bake multires to layer
@@ -256,7 +255,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
         #return {'FINISHED'}
 
         # Bake tangent if it's not just created
-        if not is_newly_created_tangent and not self.ignore_tangent_bake:
+        if not is_newly_created_tangent and ysup.always_bake_tangents:
             bake_tangent(obj, uv_name)
 
         # Remove multires
