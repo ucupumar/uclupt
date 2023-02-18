@@ -204,7 +204,7 @@ class YSCreateYScluptNode(bpy.types.Operator):
             layer = Layer.add_new_layer(tree, self.layer_name, image, self.uv_map)
 
             # Bake multires to layer
-            bpy.ops.mesh.y_apply_sculpt_to_vdm_layer(ignore_tangent_bake=True)
+            bpy.ops.mesh.y_apply_sculpt_to_vdm_layer()
             #Disp.bake_multires_to_layer(obj, layer)
 
             # Reference the ys manually to avoid pointer error
