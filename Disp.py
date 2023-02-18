@@ -310,6 +310,8 @@ class YSCancelSculpt(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.object
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
 
         # Remove multires
         for mod in reversed(obj.modifiers):
@@ -324,6 +326,13 @@ class YSCancelSculpt(bpy.types.Operator):
         if subsurf:
             subsurf.show_viewport = True
             subsurf.show_render = True
+
+        # Unhide other layers
+        layer = ys.layers[ys.active_layer_index]
+        if ys.hide_other_layers:
+            for l in ys.layers:
+                if l != layer:
+                    l.enable = l.ori_enable
 
         bpy.ops.object.mode_set(mode='OBJECT')
 
