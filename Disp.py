@@ -7,6 +7,8 @@ from .common import *
 
 def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh, intensity=1.0):
 
+    print('INFO: Getting offset attributes...')
+
     if len(base.data.vertices) != len(sclupted_mesh.data.vertices):
         return None, None
 
@@ -37,6 +39,14 @@ def get_offset_attributes(base, layer_disabled_mesh, sclupted_mesh, intensity=1.
     if not att:
         att = base.data.attributes.new(OFFSET_ATTR, 'FLOAT_VECTOR', 'POINT')
     att.data.foreach_set('vector', offset.ravel())
+
+    # Free numpy array memory just in case
+    del base_arr
+    del layer_disabled_arr
+    del sculpted_arr
+    del offset
+
+    print('INFO: Geting offset attributes finished!')
 
     return att, max_value
 
@@ -143,7 +153,9 @@ def bake_multires_to_layer(obj, layer):
     prepare_bake_settings(book, temp0, uv_name)
 
     # Bake offest
+    print('INFO: Baking vdm...')
     bpy.ops.object.bake()
+    print('INFO: Baking vdm is finished!')
 
     # Pack image
     #image.pack()
@@ -152,9 +164,9 @@ def bake_multires_to_layer(obj, layer):
     recover_bake_settings(book, True)
 
     # Remove temp objects
-    bpy.data.objects.remove(temp0, do_unlink=True)
-    bpy.data.objects.remove(temp1, do_unlink=True)
-    bpy.data.objects.remove(temp2, do_unlink=True)
+    remove_mesh_obj(temp0)
+    remove_mesh_obj(temp1)
+    remove_mesh_obj(temp2)
 
     # Remove material
     if mat.users <= 1: bpy.data.materials.remove(mat, do_unlink=True)
@@ -292,7 +304,7 @@ class YSApplySculptToLayer(bpy.types.Operator):
                 if l != layer:
                     l.enable = l.ori_enable
 
-        print('INFO: ', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
+        print('INFO:', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
         return {'FINISHED'}
 
@@ -458,7 +470,7 @@ class YSSculptLayer(bpy.types.Operator):
         bpy.ops.object.multires_reshape(modifier=multires.name)
 
         # Remove temp object
-        bpy.data.objects.remove(temp, do_unlink=True)
+        remove_mesh_obj(temp)
 
         # Use current levels
         multires.levels = ys.levels

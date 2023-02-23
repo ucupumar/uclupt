@@ -343,7 +343,7 @@ def bake_tangent(obj, uv_name=''):
     recover_bake_settings(book, True)
 
     # Remove temp object 0 and non_ngon_obj
-    bpy.data.objects.remove(temp, do_unlink=True)
+    remove_mesh_obj(temp)
 
     # Set back object to active
     context.view_layer.objects.active = obj

@@ -29,6 +29,11 @@ def get_current_version_str():
     bl_info = sys.modules[get_addon_name()].bl_info
     return str(bl_info['version']).replace(', ', '.').replace('(','').replace(')','')
 
+def remove_mesh_obj(obj):
+    data = obj.data
+    bpy.data.objects.remove(obj, do_unlink=True)
+    bpy.data.meshes.remove(data)
+
 def get_layer_tree(entity):
 
     # Search inside ys tree
