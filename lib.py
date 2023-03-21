@@ -395,8 +395,8 @@ def get_blend_geo_tree():
         inp.default_value = 1.0
         inp.min_value = 0.0
         inp.max_value = 1.0
-        create_input(tree, 'Vector', 'NodeSocketVector')
-        create_input(tree, 'Vector', 'NodeSocketVector')
+        create_input(tree, 'Vector 1', 'NodeSocketVector')
+        create_input(tree, 'Vector 2', 'NodeSocketVector')
         create_output(tree, 'Vector', 'NodeSocketVector')
 
         # Create nodes
