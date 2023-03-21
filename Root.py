@@ -53,6 +53,11 @@ class YSCreateYScluptNode(bpy.types.Operator):
             self.multires_exists = True
             self.levels = multires.total_levels
 
+        # If multires aren't exists, search for standard subsurf
+        if not self.multires_exists:
+            subsurf = get_subsurf_modifier(obj)
+            if subsurf: self.levels = max(subsurf.levels, subsurf.render_levels)
+
         # Layer name
         self.layer_name = get_unique_name(obj.name + ' Layer', bpy.data.images)
 

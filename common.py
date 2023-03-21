@@ -189,6 +189,12 @@ def get_multires_modifier(obj):
 
     return None
 
+def get_subsurf_modifier(obj):
+    subsurf = [m for m in obj.modifiers if m.type == 'SUBSURF']
+    if subsurf: return subsurf[0]
+
+    return None
+
 def get_active_multires_modifier():
     obj = bpy.context.object
     if not obj: return None
