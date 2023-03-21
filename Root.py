@@ -251,13 +251,18 @@ class YSFixSubsurf(bpy.types.Operator):
 
         # Get the modifiers again to avoid wrong pointers
         geo, subsurf = get_ysculpt_modifiers(obj)
+        multires = get_multires_modifier(obj)
+
+        # Set max levels to total levels of multires if multires level is higher
+        if multires and multires.total_levels > ys.max_levels and multires.total_levels <= 6:
+            ys.max_levels = multires.total_levels
+            ys.levels = multires.sculpt_levels
 
         # Set levels
         if subsurf:
             subsurf.levels = ys.levels
             subsurf.render_levels = ys.max_levels
 
-        multires = get_multires_modifier(obj)
         if multires:
             # Go to sculpt mode if subsurf and multires are on at the same time
             if (subsurf.show_viewport or subsurf.show_render) and (multires.show_viewport or show_render):
