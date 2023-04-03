@@ -264,6 +264,13 @@ def set_active_uv(obj, uv_name):
         obj.data.uv_layers.active = uv
         uv.active_render = True
 
+def get_layer_index(layer):
+    ys = layer.id_data.ys
+    index = -1
+    try: index = [i for i, l in enumerate(ys.layers) if l == layer][0]
+    except Exception as e: print(e)
+    return index
+
 def get_layer_uv_name(layer):
     layer_tree = get_layer_tree(layer)
     uv_map = layer_tree.nodes.get(layer.uv_map)

@@ -412,6 +412,8 @@ def get_tangent_bitangent_images(obj, uv_name, return_is_newly_created=False):
 
     return tanimage, bitimage
 
+# NOTE: UNUSED CODES but probably still be useful someday
+
 def transfer_uv(obj, image, uv_source_name, uv_target_name):
 
     uv_source = obj.data.uv_layers.get(uv_source_name)
@@ -431,7 +433,7 @@ def transfer_uv(obj, image, uv_source_name, uv_target_name):
     scene.collection.objects.link(temp)
     temp.data = temp.data.copy()
 
-    # Deselect alland set active
+    # Deselect all and set active
     bpy.ops.object.mode_set(mode = 'OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
     context.view_layer.objects.active = temp

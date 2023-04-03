@@ -373,6 +373,35 @@ class YSFixMissingUV(bpy.types.Operator):
 
         return {'FINISHED'}
 
+def transfer_layer_uv(layer, target_uv_name):
+    ys = layer.id_data.ys 
+
+    # Remmeber some settings
+    ori_hide_other_layers = ys.hide_other_layers
+    ori_active_layer_index = ys.active_layer_index
+    #ori_use_mapping = layer.use_mapping
+
+    # Set as active layer
+    ys.active_layer_index = get_layer_index(layer)
+
+    # Set to hide other layers and disable use mapping
+    ys.hide_other_layers = True
+    #layer.use_mapping = False
+
+    # Go to sculpt mode
+    bpy.ops.mesh.y_sculpt_layer()
+
+    # Set layer uv while in sculpt mode
+    layer.uv_name = target_uv_name
+
+    # Apply the sculpt
+    bpy.ops.mesh.y_apply_sculpt_to_vdm_layer()
+
+    # Recover settings
+    ys.hide_other_layers = ori_hide_other_layers
+    ys.active_layer_index = ori_active_layer_index
+    #layer.use_mapping = ori_use_mapping
+
 class YSTransferUV(bpy.types.Operator):
     bl_idname = "mesh.ys_transfer_uv"
     bl_label = "Transfer UV"
@@ -419,27 +448,21 @@ class YSTransferUV(bpy.types.Operator):
         col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
         col.prop(self, 'margin', text='')
 
+        if self.layer.use_mapping:
+            self.layout.label(text="Transfer UV will reset mapping setting!", icon='ERROR')
+
     def execute(self, context):
 
         obj = context.object
         layer = self.layer
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
 
         if self.uv_map == '':
             self.report({'ERROR'}, "Target UV cannot be empty!")
             return {'CANCELLED'}
 
-        if layer.use_mapping:
-            self.report({'ERROR'}, "Cannot transfer layer image with mapping enabled!")
-            return {'CANCELLED'}
-
-        # Get image
-        image = get_layer_image(layer)
-
-        # Transfer uv
-        transfer_uv(obj, image, layer.uv_name, self.uv_map)
-
-        # Set new uv
-        layer.uv_name = self.uv_map
+        transfer_layer_uv(layer, self.uv_map)
 
         return {'FINISHED'}
 
@@ -480,6 +503,9 @@ class YSTransferAllUVs(bpy.types.Operator):
         return True
 
     def draw(self, context):
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+
         row = self.layout.split(factor=0.4)
 
         col = row.column(align=False)
@@ -492,15 +518,15 @@ class YSTransferAllUVs(bpy.types.Operator):
         col.prop_search(self, "uv_map", self, "uv_map_coll", text='', icon='GROUP_UVS')
         col.prop(self, 'margin', text='')
 
+        # Add warning if there's layer with use mapping
+        if any([l for l in ys.layers if l.uv_name == self.from_uv_map and l.use_mapping]):
+            self.layout.label(text="Transfer UV will reset some layers mapping setting!", icon='ERROR')
+
     def execute(self, context):
 
         obj = context.object
         ys_tree = get_active_ysculpt_tree()
         ys = ys_tree.ys
-
-        if self.layer.use_mapping:
-            self.report({'ERROR'}, "Cannot transfer layer image with mapping enabled!")
-            return {'CANCELLED'}
 
         if self.from_uv_map == '' or self.uv_map == '':
             self.report({'ERROR'}, "From or To UV Map cannot be empty!")
@@ -510,23 +536,10 @@ class YSTransferAllUVs(bpy.types.Operator):
             self.report({'ERROR'}, "From and To UV cannot have same value!")
             return {'CANCELLED'}
 
-        failed_layers = []
         for layer in ys.layers:
-            if layer.use_mapping: 
-                failed_layers.append(layer)
-                continue
+            if layer.uv_name != self.from_uv_map: continue
 
-            # Get image
-            image = get_layer_image(layer)
-
-            # Transfer uv
-            transfer_uv(obj, image, layer.uv_name, self.uv_map)
-
-            # Set new uv
-            layer.uv_name = self.uv_map
-
-        if any(failed_layers):
-            self.report({'INFO'}, "Failed to transfer " + str(len(failed_layers)) + " layer(s) because they used mapping!")
+            transfer_layer_uv(layer, self.uv_map)
 
         return {'FINISHED'}
 
