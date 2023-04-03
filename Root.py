@@ -88,9 +88,9 @@ class YSCreateYScluptNode(bpy.types.Operator):
         crow = col.row(align=True)
         crow.prop(self, 'subdivision_type', expand=True)
 
-        self.layout.label(text='New Layer from Multires', icon='IMAGE_DATA')
-
         if self.multires_exists:
+            self.layout.label(text='New Layer from Multires', icon='IMAGE_DATA')
+
             #self.layout.separator()
             box = self.layout.box()
             bcol = box.column(align=True)
