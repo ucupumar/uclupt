@@ -304,6 +304,11 @@ class YSApplySculptToLayer(bpy.types.Operator):
                 if l != layer:
                     l.enable = l.ori_enable
 
+        # Remove use mapping if layer originally use mapping
+        if layer.use_mapping:
+            reset_mapping(layer)
+            layer.use_mapping = False
+
         print('INFO:', layer.name, 'is converted to Vector Displacement Map at', '{:0.2f}'.format(time.time() - T), 'seconds!')
 
         return {'FINISHED'}
@@ -365,6 +370,18 @@ class YSSculptLayer(bpy.types.Operator):
         if not ys_tree: return False
         return len(ys_tree.ys.layers) > 0
 
+    def invoke(self, context, event):
+        ys_tree = get_active_ysculpt_tree()
+        ys = ys_tree.ys
+        layer = ys.layers[ys.active_layer_index]
+
+        if layer.use_mapping:
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
+    def draw(self, context):
+        self.layout.label(text="You'll lose the mapping setting if you apply the sculpt!", icon='ERROR')
+
     def execute(self, context):
         scene = context.scene
         obj = context.object
@@ -384,9 +401,9 @@ class YSSculptLayer(bpy.types.Operator):
             self.report({'ERROR'}, "Active layer need to be enabled!")
             return {'CANCELLED'}
 
-        if layer.use_mapping:
-            self.report({'ERROR'}, "Cannot sculpt layer with mapping enabled!")
-            return {'CANCELLED'}
+        #if layer.use_mapping:
+        #    self.report({'ERROR'}, "Cannot sculpt layer with mapping enabled!")
+        #    return {'CANCELLED'}
 
         blend = layer_tree.nodes.get(layer.blend)
         intensity = blend.inputs[0].default_value

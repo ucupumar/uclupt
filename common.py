@@ -403,3 +403,15 @@ def is_uv_name_available(obj, uv_name):
             return True
 
     return False
+
+def reset_mapping(layer):
+    layer_tree = get_layer_tree(layer)
+    mapping = layer_tree.nodes.get(layer.mapping)
+
+    if mapping:
+        mapping.inputs[1].default_value = (0.0, 0.0, 0.0) # Translate
+        mapping.inputs[2].default_value = 0.0 # Rotation
+        mapping.inputs[3].default_value = (1.0, 1.0, 1.0) # Scale
+        mapping.inputs[4].default_value = (0.5, 0.5, 0.5) # Center
+        mapping.inputs[5].default_value = 1.0 # Shrink/Fatten
+
