@@ -10,19 +10,19 @@ bl_info = {
 }
 
 if "bpy" in locals():
-    import imp
-    imp.reload(common)
-    imp.reload(preferences)
-    imp.reload(icon_lib)
-    imp.reload(lib)
-    imp.reload(bake_common)
-    imp.reload(image_ops)
-    imp.reload(node_arrangements)
-    imp.reload(node_connections)
-    imp.reload(Disp)
-    imp.reload(Layer)
-    imp.reload(Root)
-    imp.reload(ui)
+    import importlib
+    importlib.reload(common)
+    importlib.reload(preferences)
+    importlib.reload(icon_lib)
+    importlib.reload(lib)
+    importlib.reload(bake_common)
+    importlib.reload(image_ops)
+    importlib.reload(node_arrangements)
+    importlib.reload(node_connections)
+    importlib.reload(Disp)
+    importlib.reload(Layer)
+    importlib.reload(Root)
+    importlib.reload(ui)
 else:
     from . import common, preferences, icon_lib, lib, bake_common, image_ops, node_arrangements, node_connections, Disp, Layer, Root, ui
 
